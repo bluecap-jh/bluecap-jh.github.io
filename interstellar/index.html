@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INTERSTELLAR</title>
+<style>
+html,body{margin:0;background:#000;color:#fff;min-height:100%}
+body{display:grid;place-items:center;font-family:Arial,sans-serif}
+#loading{opacity:.55;font-size:12px;letter-spacing:.14em}
+</style>
+</head>
+<body>
+<div id="loading">LOADING INTERSTELLAR…</div>
+<script>
+fetch("https://jibdqtfakxvropfxqxwr.supabase.co/functions/v1/interstellar")
+.then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
+.then(html=>{document.open();document.write(html);document.close()})
+.catch(err=>{document.body.innerHTML="<p style='padding:32px'>페이지를 불러오지 못했습니다.<br>"+err.message+"</p>"});
+</script>
+</body>
+</html>
