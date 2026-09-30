@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#151515">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WORKIT">
+  <title>WORKIT · Complete Category Showcase</title>
+  <meta name="description" content="WORKIT 사장님·직원 앱 핵심 화면 전시">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ef2b4f'/%3E%3Cpath d='M17 31h22l-7-8m7 8-7 8' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="viewer" id="viewer" aria-label="WORKIT 화면 갤러리">
+    <div class="slides" id="slides">
+      <figure class="slide is-active"><img src="./assets/01-core.svg" alt="서비스 핵심 화면: 홈, 급구, 스케줄, 급여, MY"></figure>
+      <figure class="slide"><img src="./assets/02-owner-tasks.svg" alt="사장님 핵심 업무: 급구 등록, 지원자 상세, 스케줄, 요청, 지급 현황"></figure>
+      <figure class="slide"><img src="./assets/03-owner-expand.svg" alt="사장님 운영 확장: 직원 권한, 매뉴얼, 커뮤니티, 채팅"></figure>
+      <figure class="slide"><img src="./assets/04-employee-core.svg" alt="직원 기본 사용: 홈, 스케줄, 근무 기록, 급여, MY"></figure>
+      <figure class="slide"><img src="./assets/05-employee-tasks.svg" alt="직원 요청과 소통: 휴무, 시간 변경, 급구, 매뉴얼, 채팅"></figure>
+    </div>
+
+    <header class="chrome topbar" id="topbar">
+      <div class="brand"><span class="mark">W</span><span>WORKIT</span></div>
+      <button class="icon-button" id="fullscreen" type="button" aria-label="전체 화면">⛶</button>
+    </header>
+
+    <button class="nav prev" id="prev" type="button" aria-label="이전 화면"><span>‹</span></button>
+    <button class="nav next" id="next" type="button" aria-label="다음 화면"><span>›</span></button>
+
+    <footer class="chrome controls" id="controls">
+      <button class="play" id="play" type="button" aria-label="자동 재생 일시 정지"><span id="playIcon">Ⅱ</span><span id="playLabel">자동 재생</span></button>
+      <div class="dots" id="dots" role="tablist" aria-label="화면 선택"></div>
+      <output class="counter" id="counter">01 / 05</output>
+    </footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
