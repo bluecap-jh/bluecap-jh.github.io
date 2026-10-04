@@ -216,6 +216,28 @@
   .ending p{font-size:clamp(18px,5.8vw,28px)!important}
 }
 </style>
+
+<style id="peak-information-layout">
+/* Let content determine row heights so longer Korean lines never collide. */
+.cluster.peak{
+  height:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:32px 44px;padding:40px 0;margin:8vh 3% 12vh;
+}
+.cluster.peak .fragment{
+  position:relative;inset:auto;max-width:none;min-width:0;
+  transform:none;opacity:1;filter:none;will-change:auto;
+  text-align:left;padding-top:14px;border-top:1px solid rgba(255,255,255,.24);
+}
+.cluster.peak .fragment h3{margin-bottom:10px;}
+.cluster.peak .fragment p{line-height:1.65;}
+.cluster.peak .quote-fragment p{font-size:18px!important;line-height:1.55!important;}
+@media (min-width:761px) and (max-width:1050px){
+  .cluster.peak{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px;}
+}
+@media (max-width:760px){
+  .cluster.peak{grid-template-columns:1fr;gap:32px;margin:8vh 0 16vh;padding:24px 0;}
+}
+</style>
 </head>
 <body>
 <div class="visual">
@@ -320,11 +342,14 @@
 
       <article class="fragment micro c2-c flow">
         <span class="label">핵심 감각</span>
-        <p class="whisper">시간의 차이는 결국 관계의 거리로 번역됩니다.</p>
+        <h3>시간의 차이는 결국 관계의 거리로 번역됩니다.</h3>
+        <p>떠난 사람에게는 잠깐의 부재였지만, 기다린 사람에게는 성장과 상실이 이어진 세월입니다. 같은 사건을 기억하는 두 사람의 감정도 달라집니다.</p>
       </article>
 
       <article class="fragment quote-fragment c2-d flow">
-        <p>쿠퍼에게는 몇 시간,<br>머피에게는 삶의 한 시기였습니다.</p>
+        <span class="label">엇갈린 생애</span>
+        <h3>쿠퍼에게는 몇 시간, 머피에게는 삶의 한 시기였습니다.</h3>
+        <p>영화는 우주에서의 짧은 임무와 지구에서의 긴 기다림을 나란히 보여줍니다. 관객은 두 시간을 함께 보며 그 차이를 느끼게 됩니다.</p>
       </article>
 
       <article class="fragment small c2-e flow">
@@ -335,7 +360,8 @@
 
       <article class="fragment micro c2-f flow">
         <span class="label">현재</span>
-        <p class="whisper">누구에게나 하나의 현재만 존재하지는 않습니다.</p>
+        <h3>서로의 현재를 함께 살아갈 수는 없습니다.</h3>
+        <p>쿠퍼가 메시지를 보는 순간, 화면 속 가족의 시간은 이미 지나가 있습니다. 소식을 받는 일과 그 순간을 함께하는 일 사이에는 간극이 남습니다.</p>
       </article>
 
       <article class="fragment wide c2-g flow">
@@ -354,6 +380,21 @@
         <span class="label">정리</span>
         <h3>이 영화는 과학을 설명하는 동시에, 시간을 감정으로 체험하게 합니다.</h3>
         <p>그래서 인터스텔라의 시간은 단순한 개념이 아니라, 관계가 엇갈리고 다시 이어지는 과정을 체감하게 하는 서사적 장치가 됩니다.</p>
+      </article>
+      <article class="fragment flow">
+        <span class="label">선택의 무게</span>
+        <h3>임무에 쓰는 시간은 가족과의 시간을 바꿉니다.</h3>
+        <p>인류를 위한 선택과 가족에게 돌아가려는 마음은 쿠퍼 안에서 부딪힙니다. 시간의 차이가 커질수록 선택이 남긴 대가도 선명해집니다.</p>
+      </article>
+      <article class="fragment flow">
+        <span class="label">기다림의 시점</span>
+        <h3>머피의 이야기는 지구에 남은 시간을 보여줍니다.</h3>
+        <p>관객은 쿠퍼의 여정뿐 아니라 머피가 부재를 견디는 과정도 따라갑니다. 우주의 거리는 지구에 남겨진 사람의 삶을 통해 감정의 무게를 얻습니다.</p>
+      </article>
+      <article class="fragment flow">
+        <span class="label">시간을 읽는 방식</span>
+        <h3>메시지와 시계는 보이지 않는 시간을 드러냅니다.</h3>
+        <p>영상에 쌓인 삶의 변화와 시계에 남겨진 신호는 시간을 읽을 수 있는 흔적으로 바꿉니다. 두 사람은 그 흔적을 통해 서로를 이해하고 연결됩니다.</p>
       </article>
     </div>
 
@@ -444,13 +485,40 @@
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function easeInOutCubic(t){ return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
 
+  let informationBlocks=[];
+  let maximumInformation=1;
+  function informationAt(y){
+    const top=y+innerHeight*.08;
+    const bottom=y+innerHeight*.90;
+    return informationBlocks.reduce((sum,b)=>{
+      const visible=Math.max(0,Math.min(bottom,b.bottom)-Math.max(top,b.top));
+      return sum+b.weight*Math.min(1,visible/b.height);
+    },0);
+  }
+  function measureInformation(){
+    // offset geometry is independent of the scrolling text's visual transform.
+    informationBlocks=flowItems.map(el=>{
+      let top=0,node=el;
+      while(node){top+=node.offsetTop;node=node.offsetParent;}
+      const height=Math.max(1,el.offsetHeight);
+      return {top,bottom:top+height,height,weight:el.textContent.replace(/\s/g,'').length};
+    });
+    const max=Math.max(0,root.scrollHeight-innerHeight);
+    // The overlap function is piecewise linear; its maximum is at an edge.
+    const candidates=[0,max];
+    informationBlocks.forEach(b=>{
+      [b.top,b.bottom].forEach(edge=>{
+        candidates.push(clamp(edge-innerHeight*.08,0,max),clamp(edge-innerHeight*.90,0,max));
+      });
+    });
+    maximumInformation=Math.max(1,...candidates.map(informationAt));
+  }
+
   function update(){
     const max=document.documentElement.scrollHeight-innerHeight;
     const p=clamp(scrollY/max,0,1);
-    const dist=Math.abs(p-.52);
-    let g=0;
-    if(dist < .34){ g=1-Math.pow(dist/.34,2.15); }
-    g=clamp(g,0,1);
+    // Match the HUD and gravity to the amount of readable text in this viewport.
+    const g=clamp(informationAt(scrollY)/maximumInformation,0,1);
 
     root.style.setProperty('--p',p.toFixed(4));
     root.style.setProperty('--g',g.toFixed(4));
@@ -499,9 +567,11 @@
     });
   }
 
-  update();
+  function refresh(){measureInformation();update();}
+  refresh();
   addEventListener('scroll',update,{passive:true});
-  addEventListener('resize',update);
+  addEventListener('resize',refresh);
+  document.fonts.ready.then(refresh);
 })();
 </script>
 </body>
