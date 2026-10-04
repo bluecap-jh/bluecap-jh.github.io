@@ -13,7 +13,7 @@
     font-family:"Noto Sans KR","Noto Sans CJK KR",Inter,"Helvetica Neue",Arial,sans-serif;
     overflow-x:hidden;
   }
-  .visual{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.035), transparent 26%),#000;}
+  .visual{filter:brightness(1.1);position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.035), transparent 26%),#000;}
   .visual::before{
     content:"";position:absolute;inset:0;
     background:linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
@@ -508,6 +508,7 @@
     peak.style.height=(Math.max(...placed.map(b=>b.bottom))+100)+'px';
   }
 
+  let gravityPeakY=1;
   let informationBlocks=[];
   let maximumInformation=1;
   function informationAt(y){
@@ -527,6 +528,9 @@
       return {top,bottom:top+height,height,weight:el.textContent.replace(/\s/g,'').length};
     });
     const max=Math.max(0,root.scrollHeight-innerHeight);
+    let peakTop=0,peakNode=peak;
+    while(peakNode){peakTop+=peakNode.offsetTop;peakNode=peakNode.offsetParent;}
+    gravityPeakY=clamp(peakTop+peak.offsetHeight*.5-innerHeight*.5,1,Math.max(1,max-1));
     // The overlap function is piecewise linear; its maximum is at an edge.
     const candidates=[0,max];
     informationBlocks.forEach(b=>{
@@ -540,12 +544,16 @@
   function update(){
     const max=document.documentElement.scrollHeight-innerHeight;
     const p=clamp(scrollY/max,0,1);
-    // Match the HUD and gravity to the amount of readable text in this viewport.
-    const g=clamp(informationAt(scrollY)/maximumInformation,0,1);
+    // Text density may fluctuate; background gravity follows one smooth scroll arc.
+    const density=clamp(informationAt(scrollY)/maximumInformation,0,1);
+    const phase=scrollY<=gravityPeakY
+      ?clamp(scrollY/gravityPeakY,0,1)
+      :clamp((max-scrollY)/Math.max(1,max-gravityPeakY),0,1);
+    const g=phase*phase*(3-2*phase);
 
     root.style.setProperty('--p',p.toFixed(4));
     root.style.setProperty('--g',g.toFixed(4));
-    densityValue.textContent=Math.round(g*100)+'%';
+    densityValue.textContent=Math.round(density*100)+'%';
 
     const totalMinutes=Math.round(p*417);
     const hh=String(Math.floor(totalMinutes/60)).padStart(2,'0');
@@ -592,9 +600,15 @@
     });
   }
 
+  let framePending=false;
+  function scheduleUpdate(){
+    if(framePending)return;
+    framePending=true;
+    requestAnimationFrame(()=>{framePending=false;update();});
+  }
   function refresh(){layoutPeak();measureInformation();update();}
   refresh();
-  addEventListener('scroll',update,{passive:true});
+  addEventListener('scroll',scheduleUpdate,{passive:true});
   addEventListener('resize',refresh);
   document.fonts.ready.then(refresh);
 })();
