@@ -6,15 +6,29 @@
 <title>INTERSTELLAR → TENET — Time Study</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;background:#000;color:#fff}
+  html,body{
+    margin:0;
+    background:#000;
+    color:#fff;
+    min-height:100%;
+  }
   html{scroll-behavior:auto}
-  body{overflow-x:hidden;overscroll-behavior-y:none}
+  body{
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  /* A generous fallback height guarantees that the parent page is scrollable
+     even before Safari finishes exposing the iframe document height. */
   .stage{
     position:relative;
     width:100%;
+    height:1200vh;
     min-height:100vh;
     background:#000;
   }
+
   .stage-sticky{
     position:sticky;
     top:0;
@@ -23,20 +37,19 @@
     overflow:hidden;
     background:#000;
   }
+
   .project-frame{
     display:block;
     width:100%;
-    height:100%;
+    height:100vh;
     border:0;
     background:#000;
     pointer-events:none;
   }
+
   .transition-gap{
     height:200vh;
     background:#000;
-  }
-  .noscript-note{
-    display:none;
   }
 </style>
 </head>
@@ -48,7 +61,6 @@
         id="interstellarFrame"
         src="/interstellar-v20/"
         title="INTERSTELLAR — Time Study"
-        scrolling="no"
         loading="eager"></iframe>
     </div>
   </section>
@@ -62,14 +74,9 @@
         id="tenetFrame"
         src="./tenet.html"
         title="TENET — Time Direction Study"
-        scrolling="no"
         loading="eager"></iframe>
     </div>
   </section>
-
-  <noscript class="noscript-note">
-    JavaScript가 필요합니다.
-  </noscript>
 
 <script>
 (() => {
@@ -85,87 +92,120 @@
   ];
 
   let raf = 0;
+  let pollCount = 0;
 
-  function frameDoc(pair){
+  function getChild(pair){
     try{
       const win = pair.frame.contentWindow;
       const doc = win && win.document;
-      if(!win || !doc || !doc.documentElement) return null;
+      if(!win || !doc || !doc.documentElement || !doc.body) return null;
       return {win, doc};
-    }catch(e){
+    }catch(err){
       return null;
     }
   }
 
-  function childScrollHeight(doc){
+  function getChildHeight(doc){
     const de = doc.documentElement;
     const body = doc.body;
     return Math.max(
-      de ? de.scrollHeight : 0,
-      body ? body.scrollHeight : 0,
+      de.scrollHeight,
+      de.offsetHeight,
+      body.scrollHeight,
+      body.offsetHeight,
       window.innerHeight
     );
   }
 
+  function injectChildFixes(doc){
+    if(doc.getElementById('combined-page-fixes')) return;
+
+    const style = doc.createElement('style');
+    style.id = 'combined-page-fixes';
+    style.textContent = `
+      html{
+        scroll-behavior:auto !important;
+        scrollbar-width:none !important;
+      }
+      body{
+        scrollbar-width:none !important;
+      }
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar{
+        display:none !important;
+        width:0 !important;
+        height:0 !important;
+      }
+    `;
+    doc.head.appendChild(style);
+  }
+
   function measure(pair){
-    const child = frameDoc(pair);
-    if(!child) return;
-    const h = childScrollHeight(child.doc);
-    pair.stage.style.height = Math.max(h, window.innerHeight) + 'px';
+    const child = getChild(pair);
+    if(!child) return false;
+
+    injectChildFixes(child.doc);
+
+    const height = getChildHeight(child.doc);
+
+    /* Sticky travel distance = stage height - viewport height.
+       This matches the child's real scrollable distance. */
+    pair.stage.style.height = Math.max(height, window.innerHeight) + 'px';
+    return true;
   }
 
   function prepare(pair){
-    const child = frameDoc(pair);
-    if(!child) return;
-    const {win, doc} = child;
-
-    doc.documentElement.style.scrollBehavior = 'auto';
-    doc.documentElement.style.overscrollBehavior = 'none';
-    if(doc.body){
-      doc.body.style.overscrollBehavior = 'none';
-    }
+    const child = getChild(pair);
+    if(!child) return false;
 
     measure(pair);
 
-    if(win.ResizeObserver){
-      const observer = new win.ResizeObserver(() => {
+    if(!pair._observing && child.win.ResizeObserver){
+      pair._observing = true;
+      const ro = new child.win.ResizeObserver(() => {
         measure(pair);
         requestSync();
       });
-      observer.observe(doc.documentElement);
-      if(doc.body) observer.observe(doc.body);
+      ro.observe(child.doc.documentElement);
+      ro.observe(child.doc.body);
+      pair._ro = ro;
     }
 
-    [80, 250, 700, 1400].forEach(ms => {
-      setTimeout(() => {
-        measure(pair);
-        requestSync();
-      }, ms);
-    });
-
-    if(doc.fonts && doc.fonts.ready){
-      doc.fonts.ready.then(() => {
+    if(child.doc.fonts && child.doc.fonts.ready && !pair._fontsReadyHooked){
+      pair._fontsReadyHooked = true;
+      child.doc.fonts.ready.then(() => {
         measure(pair);
         requestSync();
       }).catch(() => {});
     }
+
+    return true;
   }
 
   function syncPair(pair){
-    const child = frameDoc(pair);
+    const child = getChild(pair);
     if(!child) return;
-    const {win, doc} = child;
 
     const stageTop = pair.stage.offsetTop;
-    const stageHeight = pair.stage.offsetHeight;
     const local = window.scrollY - stageTop;
-    const childMax = Math.max(childScrollHeight(doc) - window.innerHeight, 0);
+    const childMax = Math.max(getChildHeight(child.doc) - window.innerHeight, 0);
 
-    const near = local > -window.innerHeight && local < stageHeight + window.innerHeight;
-    if(!near) return;
+    /* Only update an iframe while its section is close to the viewport. */
+    if(local < -window.innerHeight || local > pair.stage.offsetHeight + window.innerHeight){
+      return;
+    }
 
     const target = Math.max(0, Math.min(childMax, local));
-    win.scrollTo(0, target);
+
+    try{
+      child.win.scrollTo({
+        top: target,
+        left: 0,
+        behavior: 'auto'
+      });
+    }catch(err){
+      child.win.scrollTo(0, target);
+    }
   }
 
   function sync(){
@@ -177,22 +217,63 @@
     if(!raf) raf = requestAnimationFrame(sync);
   }
 
+  function refreshAll(){
+    pairs.forEach(pair => {
+      prepare(pair);
+      measure(pair);
+    });
+    requestSync();
+  }
+
+  /* Do not rely only on the iframe load event:
+     Safari may finish a cached iframe before this listener is attached. */
   pairs.forEach(pair => {
     pair.frame.addEventListener('load', () => {
       prepare(pair);
-      requestSync();
+      [0, 80, 250, 700, 1500].forEach(delay => {
+        setTimeout(() => {
+          measure(pair);
+          requestSync();
+        }, delay);
+      });
     });
+
+    /* Handle already-loaded frames immediately. */
+    if(pair.frame.contentDocument &&
+       (pair.frame.contentDocument.readyState === 'interactive' ||
+        pair.frame.contentDocument.readyState === 'complete')){
+      prepare(pair);
+    }
   });
 
+  /* Short polling window makes loading reliable on Safari/GitHub Pages caches. */
+  const poll = setInterval(() => {
+    pollCount += 1;
+    refreshAll();
+    if(pollCount >= 40 || pairs.every(p => !!getChild(p))){
+      if(pollCount >= 8){
+        clearInterval(poll);
+      }
+    }
+  }, 150);
+
   addEventListener('scroll', requestSync, {passive:true});
+  addEventListener('wheel', requestSync, {passive:true});
+  addEventListener('touchmove', requestSync, {passive:true});
+
   addEventListener('resize', () => {
-    pairs.forEach(measure);
-    requestSync();
+    refreshAll();
+  });
+
+  addEventListener('pageshow', () => {
+    refreshAll();
   });
 
   history.scrollRestoration = 'manual';
-  scrollTo(0, 0);
-  requestSync();
+
+  setTimeout(refreshAll, 0);
+  setTimeout(refreshAll, 300);
+  setTimeout(refreshAll, 1000);
 })();
 </script>
 </body>
