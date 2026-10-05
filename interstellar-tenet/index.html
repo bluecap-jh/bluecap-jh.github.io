@@ -19,12 +19,9 @@
     -webkit-overflow-scrolling:touch;
   }
 
-  /* A generous fallback height guarantees that the parent page is scrollable
-     even before Safari finishes exposing the iframe document height. */
   .stage{
     position:relative;
     width:100%;
-    height:1200vh;
     min-height:100vh;
     background:#000;
   }
@@ -83,16 +80,17 @@
   const pairs = [
     {
       stage: document.getElementById('interstellarStage'),
-      frame: document.getElementById('interstellarFrame')
+      frame: document.getElementById('interstellarFrame'),
+      fallbackVh: 1150
     },
     {
       stage: document.getElementById('tenetStage'),
-      frame: document.getElementById('tenetFrame')
+      frame: document.getElementById('tenetFrame'),
+      fallbackVh: 1100
     }
   ];
 
   let raf = 0;
-  let pollCount = 0;
 
   function getChild(pair){
     try{
@@ -105,107 +103,96 @@
     }
   }
 
-  function getChildHeight(doc){
+  function childHeight(doc){
     const de = doc.documentElement;
     const body = doc.body;
     return Math.max(
-      de.scrollHeight,
-      de.offsetHeight,
-      body.scrollHeight,
-      body.offsetHeight,
-      window.innerHeight
+      de.scrollHeight || 0,
+      de.offsetHeight || 0,
+      body.scrollHeight || 0,
+      body.offsetHeight || 0,
+      innerHeight
     );
   }
 
-  function injectChildFixes(doc){
-    if(doc.getElementById('combined-page-fixes')) return;
-
-    const style = doc.createElement('style');
-    style.id = 'combined-page-fixes';
-    style.textContent = `
-      html{
-        scroll-behavior:auto !important;
-        scrollbar-width:none !important;
-      }
-      body{
-        scrollbar-width:none !important;
-      }
-      html::-webkit-scrollbar,
-      body::-webkit-scrollbar{
-        display:none !important;
-        width:0 !important;
-        height:0 !important;
-      }
-    `;
-    doc.head.appendChild(style);
-  }
-
-  function measure(pair){
+  function prepareChild(pair){
     const child = getChild(pair);
     if(!child) return false;
 
-    injectChildFixes(child.doc);
+    const {doc} = child;
 
-    const height = getChildHeight(child.doc);
+    if(!doc.getElementById('combined-page-fixes')){
+      const style = doc.createElement('style');
+      style.id = 'combined-page-fixes';
+      style.textContent = `
+        html{
+          scroll-behavior:auto !important;
+          scrollbar-width:none !important;
+        }
+        body{
+          scrollbar-width:none !important;
+        }
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar{
+          display:none !important;
+          width:0 !important;
+          height:0 !important;
+        }
+      `;
+      doc.head.appendChild(style);
+    }
 
-    /* Sticky travel distance = stage height - viewport height.
-       This matches the child's real scrollable distance. */
-    pair.stage.style.height = Math.max(height, window.innerHeight) + 'px';
     return true;
   }
 
-  function prepare(pair){
+  function lockStageLength(pair){
+    if(pair.locked) return true;
+
     const child = getChild(pair);
     if(!child) return false;
 
-    measure(pair);
+    prepareChild(pair);
 
-    if(!pair._observing && child.win.ResizeObserver){
-      pair._observing = true;
-      const ro = new child.win.ResizeObserver(() => {
-        measure(pair);
-        requestSync();
-      });
-      ro.observe(child.doc.documentElement);
-      ro.observe(child.doc.body);
-      pair._ro = ro;
-    }
+    const measured = childHeight(child.doc);
 
-    if(child.doc.fonts && child.doc.fonts.ready && !pair._fontsReadyHooked){
-      pair._fontsReadyHooked = true;
-      child.doc.fonts.ready.then(() => {
-        measure(pair);
-        requestSync();
-      }).catch(() => {});
-    }
+    /* Freeze the section length ONCE.
+       After this point scroll-driven visual changes can never extend the section. */
+    const safeHeight = Math.max(
+      measured,
+      innerHeight * (pair.fallbackVh / 100)
+    );
+
+    pair.stage.style.height = Math.round(safeHeight) + 'px';
+    pair.lockedHeight = Math.round(safeHeight);
+    pair.lockedChildMax = Math.max(measured - innerHeight, 1);
+    pair.locked = true;
 
     return true;
   }
 
   function syncPair(pair){
     const child = getChild(pair);
-    if(!child) return;
+    if(!child || !pair.locked) return;
 
     const stageTop = pair.stage.offsetTop;
-    const local = window.scrollY - stageTop;
-    const childMax = Math.max(getChildHeight(child.doc) - window.innerHeight, 0);
+    const stageTravel = Math.max(pair.lockedHeight - innerHeight, 1);
+    const local = scrollY - stageTop;
 
-    /* Only update an iframe while its section is close to the viewport. */
-    if(local < -window.innerHeight || local > pair.stage.offsetHeight + window.innerHeight){
+    if(local < -innerHeight || local > pair.lockedHeight + innerHeight){
       return;
     }
 
-    const target = Math.max(0, Math.min(childMax, local));
+    /* Normalize parent movement through this finite stage.
+       At progress 1 the child is guaranteed to be at its actual bottom,
+       and immediately after that the parent leaves the stage. */
+    const progress = Math.max(0, Math.min(1, local / stageTravel));
+
+    const currentMax = Math.max(childHeight(child.doc) - innerHeight, 1);
+    const target = progress * currentMax;
 
     try{
-      child.win.scrollTo({
-        top: target,
-        left: 0,
-        behavior: 'auto'
-      });
-    }catch(err){
       child.win.scrollTo(0, target);
-    }
+    }catch(err){}
   }
 
   function sync(){
@@ -217,43 +204,40 @@
     if(!raf) raf = requestAnimationFrame(sync);
   }
 
-  function refreshAll(){
-    pairs.forEach(pair => {
-      prepare(pair);
-      measure(pair);
-    });
+  function tryLockAll(){
+    let ready = true;
+    for(const pair of pairs){
+      if(!pair.locked){
+        if(!lockStageLength(pair)) ready = false;
+      }
+    }
     requestSync();
+    return ready;
   }
 
-  /* Do not rely only on the iframe load event:
-     Safari may finish a cached iframe before this listener is attached. */
   pairs.forEach(pair => {
+    /* Temporary finite fallback: never allow an endless stage before load. */
+    pair.stage.style.height = (pair.fallbackVh + 100) + 'vh';
+
     pair.frame.addEventListener('load', () => {
-      prepare(pair);
-      [0, 80, 250, 700, 1500].forEach(delay => {
+      pair.locked = false;
+
+      [0, 120, 400, 900].forEach(delay => {
         setTimeout(() => {
-          measure(pair);
+          if(!pair.locked) lockStageLength(pair);
           requestSync();
         }, delay);
       });
     });
-
-    /* Handle already-loaded frames immediately. */
-    if(pair.frame.contentDocument &&
-       (pair.frame.contentDocument.readyState === 'interactive' ||
-        pair.frame.contentDocument.readyState === 'complete')){
-      prepare(pair);
-    }
   });
 
-  /* Short polling window makes loading reliable on Safari/GitHub Pages caches. */
-  const poll = setInterval(() => {
-    pollCount += 1;
-    refreshAll();
-    if(pollCount >= 40 || pairs.every(p => !!getChild(p))){
-      if(pollCount >= 8){
-        clearInterval(poll);
-      }
+  /* Same-origin frames may already be cached before the load listener fires. */
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts++;
+    const done = tryLockAll();
+    if(done || attempts >= 30){
+      clearInterval(timer);
     }
   }, 150);
 
@@ -262,18 +246,25 @@
   addEventListener('touchmove', requestSync, {passive:true});
 
   addEventListener('resize', () => {
-    refreshAll();
+    /* Keep stage lengths finite; on viewport resize relock once. */
+    pairs.forEach(pair => {
+      pair.locked = false;
+    });
+    setTimeout(() => {
+      pairs.forEach(lockStageLength);
+      requestSync();
+    }, 80);
   });
 
   addEventListener('pageshow', () => {
-    refreshAll();
+    setTimeout(() => {
+      tryLockAll();
+      requestSync();
+    }, 50);
   });
 
   history.scrollRestoration = 'manual';
-
-  setTimeout(refreshAll, 0);
-  setTimeout(refreshAll, 300);
-  setTimeout(refreshAll, 1000);
+  requestSync();
 })();
 </script>
 </body>
