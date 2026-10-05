@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INTERSTELLAR → TENET — Time Study</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#000;color:#fff}
+  html{scroll-behavior:auto}
+  body{overflow-x:hidden;overscroll-behavior-y:none}
+  .stage{
+    position:relative;
+    width:100%;
+    min-height:100vh;
+    background:#000;
+  }
+  .stage-sticky{
+    position:sticky;
+    top:0;
+    width:100%;
+    height:100vh;
+    overflow:hidden;
+    background:#000;
+  }
+  .project-frame{
+    display:block;
+    width:100%;
+    height:100%;
+    border:0;
+    background:#000;
+    pointer-events:none;
+  }
+  .transition-gap{
+    height:200vh;
+    background:#000;
+  }
+  .noscript-note{
+    display:none;
+  }
+</style>
+</head>
+<body>
+  <section class="stage" id="interstellarStage" aria-label="Interstellar project">
+    <div class="stage-sticky">
+      <iframe
+        class="project-frame"
+        id="interstellarFrame"
+        src="/interstellar-v20/"
+        title="INTERSTELLAR — Time Study"
+        scrolling="no"
+        loading="eager"></iframe>
+    </div>
+  </section>
+
+  <div class="transition-gap" aria-hidden="true"></div>
+
+  <section class="stage" id="tenetStage" aria-label="Tenet project">
+    <div class="stage-sticky">
+      <iframe
+        class="project-frame"
+        id="tenetFrame"
+        src="./tenet.html"
+        title="TENET — Time Direction Study"
+        scrolling="no"
+        loading="eager"></iframe>
+    </div>
+  </section>
+
+  <noscript class="noscript-note">
+    JavaScript가 필요합니다.
+  </noscript>
+
+<script>
+(() => {
+  const pairs = [
+    {
+      stage: document.getElementById('interstellarStage'),
+      frame: document.getElementById('interstellarFrame')
+    },
+    {
+      stage: document.getElementById('tenetStage'),
+      frame: document.getElementById('tenetFrame')
+    }
+  ];
+
+  let raf = 0;
+
+  function frameDoc(pair){
+    try{
+      const win = pair.frame.contentWindow;
+      const doc = win && win.document;
+      if(!win || !doc || !doc.documentElement) return null;
+      return {win, doc};
+    }catch(e){
+      return null;
+    }
+  }
+
+  function childScrollHeight(doc){
+    const de = doc.documentElement;
+    const body = doc.body;
+    return Math.max(
+      de ? de.scrollHeight : 0,
+      body ? body.scrollHeight : 0,
+      window.innerHeight
+    );
+  }
+
+  function measure(pair){
+    const child = frameDoc(pair);
+    if(!child) return;
+    const h = childScrollHeight(child.doc);
+    pair.stage.style.height = Math.max(h, window.innerHeight) + 'px';
+  }
+
+  function prepare(pair){
+    const child = frameDoc(pair);
+    if(!child) return;
+    const {win, doc} = child;
+
+    doc.documentElement.style.scrollBehavior = 'auto';
+    doc.documentElement.style.overscrollBehavior = 'none';
+    if(doc.body){
+      doc.body.style.overscrollBehavior = 'none';
+    }
+
+    measure(pair);
+
+    if(win.ResizeObserver){
+      const observer = new win.ResizeObserver(() => {
+        measure(pair);
+        requestSync();
+      });
+      observer.observe(doc.documentElement);
+      if(doc.body) observer.observe(doc.body);
+    }
+
+    [80, 250, 700, 1400].forEach(ms => {
+      setTimeout(() => {
+        measure(pair);
+        requestSync();
+      }, ms);
+    });
+
+    if(doc.fonts && doc.fonts.ready){
+      doc.fonts.ready.then(() => {
+        measure(pair);
+        requestSync();
+      }).catch(() => {});
+    }
+  }
+
+  function syncPair(pair){
+    const child = frameDoc(pair);
+    if(!child) return;
+    const {win, doc} = child;
+
+    const stageTop = pair.stage.offsetTop;
+    const stageHeight = pair.stage.offsetHeight;
+    const local = window.scrollY - stageTop;
+    const childMax = Math.max(childScrollHeight(doc) - window.innerHeight, 0);
+
+    const near = local > -window.innerHeight && local < stageHeight + window.innerHeight;
+    if(!near) return;
+
+    const target = Math.max(0, Math.min(childMax, local));
+    win.scrollTo(0, target);
+  }
+
+  function sync(){
+    raf = 0;
+    pairs.forEach(syncPair);
+  }
+
+  function requestSync(){
+    if(!raf) raf = requestAnimationFrame(sync);
+  }
+
+  pairs.forEach(pair => {
+    pair.frame.addEventListener('load', () => {
+      prepare(pair);
+      requestSync();
+    });
+  });
+
+  addEventListener('scroll', requestSync, {passive:true});
+  addEventListener('resize', () => {
+    pairs.forEach(measure);
+    requestSync();
+  });
+
+  history.scrollRestoration = 'manual';
+  scrollTo(0, 0);
+  requestSync();
+})();
+</script>
+</body>
+</html>
