@@ -19,21 +19,32 @@
     -webkit-overflow-scrolling:touch;
   }
 
-  .stage{
-    position:relative;
+  /*
+    The parent page owns the entire scroll length.
+    Child documents never determine or extend this height.
+  */
+  .scroll-segment{
     width:100%;
-    min-height:100vh;
     background:#000;
   }
+  #interstellarSegment{height:1200vh;}
+  #blackGap{height:200vh;}
+  #tenetSegment{height:1200vh;}
 
-  .stage-sticky{
-    position:sticky;
-    top:0;
+  .viewport-layer{
+    position:fixed;
+    inset:0;
     width:100%;
     height:100vh;
-    overflow:hidden;
     background:#000;
+    overflow:hidden;
+    pointer-events:none;
+    transition:opacity .12s linear;
+    will-change:opacity;
   }
+
+  #interstellarLayer{z-index:2;opacity:1;}
+  #tenetLayer{z-index:3;opacity:0;}
 
   .project-frame{
     display:block;
@@ -44,94 +55,98 @@
     pointer-events:none;
   }
 
-  .transition-gap{
-    height:200vh;
+  .black-mask{
+    position:fixed;
+    inset:0;
+    z-index:4;
+    pointer-events:none;
     background:#000;
+    opacity:0;
+    will-change:opacity;
   }
 </style>
 </head>
 <body>
-  <section class="stage" id="interstellarStage" aria-label="Interstellar project">
-    <div class="stage-sticky">
-      <iframe
-        class="project-frame"
-        id="interstellarFrame"
-        src="/interstellar-v20/"
-        title="INTERSTELLAR — Time Study"
-        loading="eager"></iframe>
-    </div>
-  </section>
 
-  <div class="transition-gap" aria-hidden="true"></div>
+  <div class="viewport-layer" id="interstellarLayer">
+    <iframe
+      class="project-frame"
+      id="interstellarFrame"
+      src="/interstellar-v20/"
+      title="INTERSTELLAR — Time Study"
+      loading="eager"></iframe>
+  </div>
 
-  <section class="stage" id="tenetStage" aria-label="Tenet project">
-    <div class="stage-sticky">
-      <iframe
-        class="project-frame"
-        id="tenetFrame"
-        src="./tenet.html"
-        title="TENET — Time Direction Study"
-        loading="eager"></iframe>
-    </div>
-  </section>
+  <div class="viewport-layer" id="tenetLayer">
+    <iframe
+      class="project-frame"
+      id="tenetFrame"
+      src="./tenet.html"
+      title="TENET — Time Direction Study"
+      loading="eager"></iframe>
+  </div>
+
+  <div class="black-mask" id="blackMask" aria-hidden="true"></div>
+
+  <main>
+    <section class="scroll-segment" id="interstellarSegment" aria-label="Interstellar project scroll area"></section>
+    <section class="scroll-segment" id="blackGap" aria-label="Black transition"></section>
+    <section class="scroll-segment" id="tenetSegment" aria-label="Tenet project scroll area"></section>
+  </main>
 
 <script>
 (() => {
-  const pairs = [
-    {
-      stage: document.getElementById('interstellarStage'),
-      frame: document.getElementById('interstellarFrame'),
-      fallbackVh: 1150
-    },
-    {
-      stage: document.getElementById('tenetStage'),
-      frame: document.getElementById('tenetFrame'),
-      fallbackVh: 1100
-    }
-  ];
+  const interSegment = document.getElementById('interstellarSegment');
+  const gap = document.getElementById('blackGap');
+  const tenetSegment = document.getElementById('tenetSegment');
+
+  const interLayer = document.getElementById('interstellarLayer');
+  const tenetLayer = document.getElementById('tenetLayer');
+  const blackMask = document.getElementById('blackMask');
+
+  const interFrame = document.getElementById('interstellarFrame');
+  const tenetFrame = document.getElementById('tenetFrame');
 
   let raf = 0;
 
-  function getChild(pair){
+  function clamp(v,a,b){
+    return Math.max(a,Math.min(b,v));
+  }
+
+  function getChild(frame){
     try{
-      const win = pair.frame.contentWindow;
+      const win = frame.contentWindow;
       const doc = win && win.document;
       if(!win || !doc || !doc.documentElement || !doc.body) return null;
-      return {win, doc};
+      return {win,doc};
     }catch(err){
       return null;
     }
   }
 
-  function childHeight(doc){
-    const de = doc.documentElement;
-    const body = doc.body;
-    return Math.max(
+  function childMaxScroll(child){
+    const de = child.doc.documentElement;
+    const body = child.doc.body;
+    const height = Math.max(
       de.scrollHeight || 0,
       de.offsetHeight || 0,
       body.scrollHeight || 0,
       body.offsetHeight || 0,
       innerHeight
     );
+    return Math.max(height - innerHeight, 1);
   }
 
-  function prepareChild(pair){
-    const child = getChild(pair);
-    if(!child) return false;
+  function prepareFrame(frame){
+    const child = getChild(frame);
+    if(!child) return;
 
-    const {doc} = child;
-
-    if(!doc.getElementById('combined-page-fixes')){
-      const style = doc.createElement('style');
+    if(!child.doc.getElementById('combined-page-fixes')){
+      const style = child.doc.createElement('style');
       style.id = 'combined-page-fixes';
       style.textContent = `
-        html{
-          scroll-behavior:auto !important;
-          scrollbar-width:none !important;
-        }
-        body{
-          scrollbar-width:none !important;
-        }
+        html{scroll-behavior:auto !important;scrollbar-width:none !important;}
+        body{scrollbar-width:none !important;}
         html::-webkit-scrollbar,
         body::-webkit-scrollbar{
           display:none !important;
@@ -139,132 +154,99 @@
           height:0 !important;
         }
       `;
-      doc.head.appendChild(style);
+      child.doc.head.appendChild(style);
     }
-
-    return true;
   }
 
-  function lockStageLength(pair){
-    if(pair.locked) return true;
-
-    const child = getChild(pair);
-    if(!child) return false;
-
-    prepareChild(pair);
-
-    const measured = childHeight(child.doc);
-
-    /* Freeze the section length ONCE.
-       After this point scroll-driven visual changes can never extend the section. */
-    const safeHeight = Math.max(
-      measured,
-      innerHeight * (pair.fallbackVh / 100)
-    );
-
-    pair.stage.style.height = Math.round(safeHeight) + 'px';
-    pair.lockedHeight = Math.round(safeHeight);
-    pair.lockedChildMax = Math.max(measured - innerHeight, 1);
-    pair.locked = true;
-
-    return true;
+  function scrollChild(frame, progress){
+    const child = getChild(frame);
+    if(!child) return;
+    const max = childMaxScroll(child);
+    child.win.scrollTo(0, clamp(progress,0,1) * max);
   }
 
-  function syncPair(pair){
-    const child = getChild(pair);
-    if(!child || !pair.locked) return;
-
-    const stageTop = pair.stage.offsetTop;
-    const stageTravel = Math.max(pair.lockedHeight - innerHeight, 1);
-    const local = scrollY - stageTop;
-
-    if(local < -innerHeight || local > pair.lockedHeight + innerHeight){
-      return;
-    }
-
-    /* Normalize parent movement through this finite stage.
-       At progress 1 the child is guaranteed to be at its actual bottom,
-       and immediately after that the parent leaves the stage. */
-    const progress = Math.max(0, Math.min(1, local / stageTravel));
-
-    const currentMax = Math.max(childHeight(child.doc) - innerHeight, 1);
-    const target = progress * currentMax;
-
-    try{
-      child.win.scrollTo(0, target);
-    }catch(err){}
+  function bounds(el){
+    const top = el.offsetTop;
+    return {
+      top,
+      height:el.offsetHeight,
+      bottom:top + el.offsetHeight
+    };
   }
 
-  function sync(){
+  function render(){
     raf = 0;
-    pairs.forEach(syncPair);
-  }
 
-  function requestSync(){
-    if(!raf) raf = requestAnimationFrame(sync);
-  }
+    const y = window.scrollY || 0;
+    const vh = innerHeight;
 
-  function tryLockAll(){
-    let ready = true;
-    for(const pair of pairs){
-      if(!pair.locked){
-        if(!lockStageLength(pair)) ready = false;
-      }
+    const i = bounds(interSegment);
+    const g = bounds(gap);
+    const t = bounds(tenetSegment);
+
+    /*
+      Each segment has a finite parent-owned timeline.
+      No child resize can ever push these boundaries farther down.
+    */
+    const interTravel = Math.max(i.height - vh, 1);
+    const tenetTravel = Math.max(t.height - vh, 1);
+
+    if(y < g.top){
+      const p = clamp((y - i.top) / interTravel, 0, 1);
+
+      interLayer.style.opacity = '1';
+      tenetLayer.style.opacity = '0';
+      blackMask.style.opacity = '0';
+
+      scrollChild(interFrame, p);
+      scrollChild(tenetFrame, 0);
+
+    }else if(y < g.bottom){
+      /*
+        The black gap is truly empty.
+        Both projects are explicitly invisible here, so Interstellar
+        cannot reappear after its ending.
+      */
+      interLayer.style.opacity = '0';
+      tenetLayer.style.opacity = '0';
+      blackMask.style.opacity = '1';
+
+      scrollChild(interFrame, 1);
+      scrollChild(tenetFrame, 0);
+
+    }else{
+      const p = clamp((y - t.top) / tenetTravel, 0, 1);
+
+      interLayer.style.opacity = '0';
+      tenetLayer.style.opacity = '1';
+      blackMask.style.opacity = '0';
+
+      scrollChild(interFrame, 1);
+      scrollChild(tenetFrame, p);
     }
-    requestSync();
-    return ready;
   }
 
-  pairs.forEach(pair => {
-    /* Temporary finite fallback: never allow an endless stage before load. */
-    pair.stage.style.height = (pair.fallbackVh + 100) + 'vh';
+  function requestRender(){
+    if(!raf) raf = requestAnimationFrame(render);
+  }
 
-    pair.frame.addEventListener('load', () => {
-      pair.locked = false;
-
-      [0, 120, 400, 900].forEach(delay => {
-        setTimeout(() => {
-          if(!pair.locked) lockStageLength(pair);
-          requestSync();
-        }, delay);
-      });
+  [interFrame,tenetFrame].forEach(frame=>{
+    frame.addEventListener('load',()=>{
+      prepareFrame(frame);
+      requestRender();
+      setTimeout(requestRender,100);
+      setTimeout(requestRender,500);
     });
   });
 
-  /* Same-origin frames may already be cached before the load listener fires. */
-  let attempts = 0;
-  const timer = setInterval(() => {
-    attempts++;
-    const done = tryLockAll();
-    if(done || attempts >= 30){
-      clearInterval(timer);
-    }
-  }, 150);
+  addEventListener('scroll',requestRender,{passive:true});
+  addEventListener('wheel',requestRender,{passive:true});
+  addEventListener('touchmove',requestRender,{passive:true});
+  addEventListener('resize',requestRender);
+  addEventListener('pageshow',requestRender);
 
-  addEventListener('scroll', requestSync, {passive:true});
-  addEventListener('wheel', requestSync, {passive:true});
-  addEventListener('touchmove', requestSync, {passive:true});
-
-  addEventListener('resize', () => {
-    /* Keep stage lengths finite; on viewport resize relock once. */
-    pairs.forEach(pair => {
-      pair.locked = false;
-    });
-    setTimeout(() => {
-      pairs.forEach(lockStageLength);
-      requestSync();
-    }, 80);
-  });
-
-  addEventListener('pageshow', () => {
-    setTimeout(() => {
-      tryLockAll();
-      requestSync();
-    }, 50);
-  });
-
-  history.scrollRestoration = 'manual';
-  requestSync();
+  history.scrollRestoration='manual';
+  requestRender();
 })();
 </script>
 </body>
