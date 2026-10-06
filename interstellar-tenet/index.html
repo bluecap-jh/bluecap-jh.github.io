@@ -8,161 +8,153 @@
   *{box-sizing:border-box}
   html,body{
     margin:0;
+    padding:0;
+    width:100%;
+    min-height:100%;
     background:#000;
     color:#fff;
-    min-height:100%;
   }
-  html{scroll-behavior:auto}
-  body{
+  html{
+    overflow-y:scroll;
     overflow-x:hidden;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
+    scroll-behavior:auto;
+  }
+  body{
+    overflow:visible;
   }
 
-  .scroll-segment{
+  /* Parent page has an explicit finite scroll length. */
+  #scrollSpace{
+    position:relative;
     width:100%;
+    height:2600vh;
     background:#000;
   }
-  #interstellarSegment{height:1200vh;}
-  #blackGap{height:200vh;}
-  #tenetSegment{height:1200vh;}
 
   .viewport-layer{
     position:fixed;
     inset:0;
-    width:100%;
+    width:100vw;
     height:100vh;
-    background:#000;
     overflow:hidden;
+    background:#000;
     pointer-events:none;
-    transition:opacity .12s linear;
-    will-change:opacity;
   }
 
-  #interstellarLayer{z-index:2;opacity:1;}
-  #tenetLayer{z-index:3;opacity:0;}
+  #interstellarLayer{
+    z-index:2;
+    opacity:1;
+  }
+
+  #tenetLayer{
+    z-index:3;
+    opacity:0;
+  }
 
   .project-frame{
     display:block;
-    width:100%;
+    width:100vw;
     height:100vh;
     border:0;
     background:#000;
     pointer-events:none;
   }
 
-  .black-mask{
+  #blackMask{
     position:fixed;
     inset:0;
     z-index:4;
-    pointer-events:none;
     background:#000;
     opacity:0;
-    will-change:opacity;
+    pointer-events:none;
   }
 </style>
 </head>
 <body>
 
-  <div class="viewport-layer" id="interstellarLayer">
-    <iframe
-      class="project-frame"
-      id="interstellarFrame"
-      src="/interstellar-v20/"
-      title="INTERSTELLAR — Time Study"
-      loading="eager"></iframe>
-  </div>
+<div id="scrollSpace" aria-hidden="true"></div>
 
-  <div class="viewport-layer" id="tenetLayer">
-    <iframe
-      class="project-frame"
-      id="tenetFrame"
-      src="./tenet.html"
-      title="TENET — Time Direction Study"
-      loading="eager"></iframe>
-  </div>
+<div class="viewport-layer" id="interstellarLayer">
+  <iframe
+    class="project-frame"
+    id="interstellarFrame"
+    src="/interstellar-v20/"
+    title="INTERSTELLAR — Time Study"
+    tabindex="-1"></iframe>
+</div>
 
-  <div class="black-mask" id="blackMask" aria-hidden="true"></div>
+<div class="viewport-layer" id="tenetLayer">
+  <iframe
+    class="project-frame"
+    id="tenetFrame"
+    src="./tenet.html"
+    title="TENET — Time Direction Study"
+    tabindex="-1"></iframe>
+</div>
 
-  <main>
-    <section class="scroll-segment" id="interstellarSegment" aria-label="Interstellar project scroll area"></section>
-    <section class="scroll-segment" id="blackGap" aria-label="Black transition"></section>
-    <section class="scroll-segment" id="tenetSegment" aria-label="Tenet project scroll area"></section>
-  </main>
+<div id="blackMask"></div>
 
 <script>
 (() => {
-  const interSegment = document.getElementById('interstellarSegment');
-  const gap = document.getElementById('blackGap');
-  const tenetSegment = document.getElementById('tenetSegment');
+  const INTER_END = 1200; // vh
+  const GAP_END = 1400;   // vh (200vh black gap)
+  const TOTAL_END = 2600; // vh
 
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
   const blackMask = document.getElementById('blackMask');
 
-  const interState = {
-    frame: document.getElementById('interstellarFrame'),
-    endSelector: '.ending',
-    endY: null,
-    naturalMax: null,
-    ready: false,
-    holdStart: .94
+  const interFrame = document.getElementById('interstellarFrame');
+  const tenetFrame = document.getElementById('tenetFrame');
+
+  const state = {
+    interMax: null,
+    tenetMax: null,
+    raf: 0
   };
 
-  const tenetState = {
-    frame: document.getElementById('tenetFrame'),
-    endSelector: '.ending',
-    endY: null,
-    naturalMax: null,
-    ready: false,
-    holdStart: 1
-  };
+  const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 
-  let raf = 0;
-
-  function clamp(v,a,b){
-    return Math.max(a,Math.min(b,v));
-  }
-
-  function getChild(state){
+  function getChild(frame){
     try{
-      const win = state.frame.contentWindow;
+      const win = frame.contentWindow;
       const doc = win && win.document;
       if(!win || !doc || !doc.documentElement || !doc.body) return null;
       return {win,doc};
-    }catch(err){
+    }catch(e){
       return null;
     }
   }
 
-  function pageTop(el){
-    let y = 0;
-    let node = el;
-    while(node){
-      y += node.offsetTop || 0;
-      node = node.offsetParent;
-    }
-    return y;
+  function measureMax(frame){
+    const child = getChild(frame);
+    if(!child) return null;
+    const de = child.doc.documentElement;
+    const body = child.doc.body;
+    const h = Math.max(
+      de.scrollHeight || 0,
+      de.offsetHeight || 0,
+      body.scrollHeight || 0,
+      body.offsetHeight || 0,
+      innerHeight
+    );
+    return Math.max(h - innerHeight, 0);
   }
 
-  function prepareState(state){
-    const child = getChild(state);
-    if(!child) return false;
-
+  function prepareFrame(frame){
+    const child = getChild(frame);
+    if(!child) return;
     const {doc} = child;
 
-    if(!doc.getElementById('combined-page-fixes')){
+    if(!doc.getElementById('combined-scroll-fix')){
       const style = doc.createElement('style');
-      style.id = 'combined-page-fixes';
+      style.id = 'combined-scroll-fix';
       style.textContent = `
-        html{
+        html,body{
           scroll-behavior:auto !important;
-          scrollbar-width:none !important;
+          overscroll-behavior:none !important;
           overflow-anchor:none !important;
-        }
-        body{
           scrollbar-width:none !important;
-          overflow-anchor:none !important;
         }
         html::-webkit-scrollbar,
         body::-webkit-scrollbar{
@@ -173,185 +165,88 @@
       `;
       doc.head.appendChild(style);
     }
-
-    return true;
   }
 
-  /*
-    Freeze the child geometry once.
-    Safari can change scrollHeight while transformed .flow items animate,
-    so render() must never recompute the target range.
-  */
-  function freezeGeometry(state){
-    const child = getChild(state);
-    if(!child) return false;
-
-    prepareState(state);
-
-    const {doc} = child;
-    const de = doc.documentElement;
-    const body = doc.body;
-
-    const documentHeight = Math.max(
-      de.scrollHeight || 0,
-      de.offsetHeight || 0,
-      body.scrollHeight || 0,
-      body.offsetHeight || 0,
-      innerHeight
-    );
-
-    const naturalMax = Math.max(documentHeight - innerHeight, 1);
-
-    let endY = naturalMax;
-    const ending = doc.querySelector(state.endSelector);
-
-    if(ending){
-      /*
-        Stop with the actual final section centered in the viewport.
-        This is more stable than using the very bottom of the document,
-        which includes exit padding after the final sentence.
-      */
-      const centerY = pageTop(ending) + ending.offsetHeight * .5 - innerHeight * .5;
-      endY = clamp(centerY, 0, naturalMax);
-    }
-
-    state.naturalMax = naturalMax;
-    state.endY = endY;
-    state.ready = true;
-    return true;
+  function cacheHeights(){
+    const a = measureMax(interFrame);
+    const b = measureMax(tenetFrame);
+    if(a !== null && a > 0) state.interMax = a;
+    if(b !== null && b > 0) state.tenetMax = b;
   }
 
-  function scrollState(state, progress){
-    const child = getChild(state);
+  function childScroll(frame, target){
+    const child = getChild(frame);
     if(!child) return;
-
-    if(!state.ready){
-      if(!freezeGeometry(state)) return;
-    }
-
-    /*
-      Interstellar reaches its final sentence at 94% of its parent segment
-      and HOLDS that exact internal scroll position for the final 6%.
-      No scrollHeight read occurs here.
-    */
-    const motionProgress = state.holdStart < 1
-      ? clamp(progress / state.holdStart, 0, 1)
-      : clamp(progress, 0, 1);
-
-    const target = state.endY * motionProgress;
-    child.win.scrollTo(0, target);
-  }
-
-  function bounds(el){
-    const top = el.offsetTop;
-    return {
-      top,
-      height:el.offsetHeight,
-      bottom:top + el.offsetHeight
-    };
+    child.win.scrollTo(0, Math.max(0,target));
   }
 
   function render(){
-    raf = 0;
+    state.raf = 0;
 
-    const y = window.scrollY || 0;
-    const vh = innerHeight;
+    const yVh = (window.scrollY / Math.max(innerHeight,1)) * 100;
 
-    const i = bounds(interSegment);
-    const g = bounds(gap);
-    const t = bounds(tenetSegment);
-
-    const interTravel = Math.max(i.height - vh, 1);
-    const tenetTravel = Math.max(t.height - vh, 1);
-
-    if(y < g.top){
-      const p = clamp((y - i.top) / interTravel, 0, 1);
-
+    if(yVh < INTER_END){
       interLayer.style.opacity = '1';
       tenetLayer.style.opacity = '0';
       blackMask.style.opacity = '0';
 
-      scrollState(interState, p);
-      scrollState(tenetState, 0);
+      const p = clamp(yVh / INTER_END, 0, 1);
+      const max = state.interMax ?? measureMax(interFrame) ?? 0;
+      childScroll(interFrame, p * max);
+      childScroll(tenetFrame, 0);
 
-    }else if(y < g.bottom){
+    }else if(yVh < GAP_END){
       interLayer.style.opacity = '0';
       tenetLayer.style.opacity = '0';
       blackMask.style.opacity = '1';
 
-      /* Lock Interstellar to its final saved coordinate throughout the gap. */
-      scrollState(interState, 1);
-      scrollState(tenetState, 0);
+      const max = state.interMax ?? 0;
+      childScroll(interFrame, max);
+      childScroll(tenetFrame, 0);
 
     }else{
-      const p = clamp((y - t.top) / tenetTravel, 0, 1);
-
       interLayer.style.opacity = '0';
       tenetLayer.style.opacity = '1';
       blackMask.style.opacity = '0';
 
-      scrollState(interState, 1);
-      scrollState(tenetState, p);
+      const p = clamp((yVh - GAP_END) / (TOTAL_END - GAP_END), 0, 1);
+      const max = state.tenetMax ?? measureMax(tenetFrame) ?? 0;
+      childScroll(interFrame, state.interMax ?? 0);
+      childScroll(tenetFrame, p * max);
     }
   }
 
   function requestRender(){
-    if(!raf) raf = requestAnimationFrame(render);
+    if(!state.raf) state.raf = requestAnimationFrame(render);
   }
 
-  function scheduleFreeze(state){
-    state.ready = false;
-
-    const attempt = () => {
-      freezeGeometry(state);
-      requestRender();
-    };
-
-    requestAnimationFrame(attempt);
-    setTimeout(attempt,120);
-    setTimeout(attempt,500);
-    setTimeout(attempt,1000);
-
-    const child = getChild(state);
-    if(child && child.doc.fonts && child.doc.fonts.ready){
-      child.doc.fonts.ready.then(() => {
-        freezeGeometry(state);
-        requestRender();
-      }).catch(()=>{});
-    }
+  function initFrame(frame){
+    prepareFrame(frame);
+    cacheHeights();
+    requestRender();
   }
 
-  [interState,tenetState].forEach(state=>{
-    state.frame.addEventListener('load',()=>{
-      prepareState(state);
-      scheduleFreeze(state);
-    });
-
-    try{
-      const doc = state.frame.contentDocument;
-      if(doc && (doc.readyState === 'interactive' || doc.readyState === 'complete')){
-        prepareState(state);
-        scheduleFreeze(state);
-      }
-    }catch(err){}
-  });
+  interFrame.addEventListener('load',()=>initFrame(interFrame));
+  tenetFrame.addEventListener('load',()=>initFrame(tenetFrame));
 
   addEventListener('scroll',requestRender,{passive:true});
   addEventListener('wheel',requestRender,{passive:true});
   addEventListener('touchmove',requestRender,{passive:true});
 
   addEventListener('resize',()=>{
-    /*
-      A viewport-size change legitimately changes the desired ending center.
-      Re-freeze only on resize, never on scroll.
-    */
-    scheduleFreeze(interState);
-    scheduleFreeze(tenetState);
+    cacheHeights();
+    requestRender();
   });
 
-  addEventListener('pageshow',requestRender);
+  addEventListener('pageshow',()=>{
+    cacheHeights();
+    requestRender();
+  });
 
-  history.scrollRestoration='manual';
+  setTimeout(()=>{cacheHeights();requestRender();},100);
+  setTimeout(()=>{cacheHeights();requestRender();},500);
+  setTimeout(()=>{cacheHeights();requestRender();},1200);
+
   requestRender();
 })();
 </script>
