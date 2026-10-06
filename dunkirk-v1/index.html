@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DUNKIRK — Three Times / One Event</title>
+<style>
+  :root{
+    --p:0;
+    --bg:#000;
+    --fg:#f2f2ef;
+    --muted:rgba(255,255,255,.44);
+    --line:rgba(255,255,255,.14);
+    --line-strong:rgba(255,255,255,.34);
+  }
+  *{box-sizing:border-box}
+  html{
+    background:#000;
+    scroll-behavior:auto;
+  }
+  body{
+    margin:0;
+    background:#000;
+    color:var(--fg);
+    font-family:"Noto Sans KR","Pretendard","Noto Sans CJK KR",Inter,"Helvetica Neue",Arial,sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* ---------- SCROLL SPACE ---------- */
+  .scroll-space{
+    height:960vh;
+    background:#000;
+  }
+
+  /* ---------- FIXED STAGE ---------- */
+  .stage{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(255,255,255,.024), transparent 32%),
+      #000;
+  }
+
+  .stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
+    background-size:52px 52px;
+    opacity:.45;
+  }
+
+  /* ---------- HEADER ---------- */
+  .hud{
+    position:absolute;
+    inset:0;
+    z-index:20;
+    pointer-events:none;
+  }
+  .brand{
+    position:absolute;
+    top:24px;
+    left:28px;
+    font-size:10px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.64);
+  }
+  .rule{
+    position:absolute;
+    top:24px;
+    right:28px;
+    text-align:right;
+    font-size:10px;
+    line-height:1.55;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.34);
+  }
+
+  .progress-rail{
+    position:absolute;
+    left:28px;
+    top:50%;
+    width:1px;
+    height:34vh;
+    transform:translateY(-50%);
+    background:rgba(255,255,255,.10);
+  }
+  .progress-rail::after{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:1px;
+    height:calc(var(--p) * 100%);
+    background:rgba(255,255,255,.72);
+  }
+  .progress-dot{
+    position:absolute;
+    left:24px;
+    top:calc(33vh + var(--p) * 34vh);
+    width:9px;
+    height:9px;
+    border:1px solid rgba(255,255,255,.78);
+    border-radius:50%;
+    transform:translateY(-50%);
+    background:#000;
+    box-shadow:0 0 14px rgba(255,255,255,.16);
+  }
+
+  /* ---------- INTRO ---------- */
+  .intro{
+    position:absolute;
+    inset:0;
+    z-index:12;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:8vh 8vw;
+    opacity:var(--intro-opacity,1);
+    transform:translateY(var(--intro-y,0px));
+    pointer-events:none;
+  }
+  .intro-inner{
+    width:min(980px,90vw);
+  }
+  .eyebrow{
+    display:block;
+    margin-bottom:18px;
+    font-size:10px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.38);
+  }
+  .intro h1{
+    margin:0;
+    font-size:clamp(66px,11vw,154px);
+    font-weight:500;
+    letter-spacing:-.045em;
+    line-height:.95;
+  }
+  .intro p{
+    width:min(680px,82vw);
+    margin:28px auto 0;
+    font-size:14px;
+    line-height:1.7;
+    color:rgba(255,255,255,.58);
+    word-break:keep-all;
+  }
+  .scroll-note{
+    margin-top:30px;
+    font-size:10px;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.25);
+  }
+
+  /* ---------- THREE AXES ---------- */
+  .axes{
+    position:absolute;
+    inset:0;
+    z-index:10;
+    display:grid;
+    grid-template-columns:1.2fr 1fr .82fr;
+    gap:0;
+    padding:88px 6.5vw 54px;
+    opacity:var(--axes-opacity,0);
+  }
+
+  .axis{
+    position:relative;
+    min-width:0;
+    border-left:1px solid var(--line);
+    overflow:hidden;
+  }
+  .axis:last-child{
+    border-right:1px solid var(--line);
+  }
+
+  .axis-head{
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    height:96px;
+    padding:0 20px;
+    border-bottom:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg,#000 0%,rgba(0,0,0,.95) 68%,rgba(0,0,0,0) 100%);
+    z-index:5;
+  }
+  .axis-code{
+    display:block;
+    font-size:10px;
+    letter-spacing:.16em;
+    color:rgba(255,255,255,.38);
+  }
+  .axis-title{
+    margin-top:7px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:14px;
+  }
+  .axis-title strong{
+    font-size:clamp(18px,1.8vw,28px);
+    font-weight:500;
+    letter-spacing:-.03em;
+  }
+  .axis-title span{
+    font-size:10px;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.44);
+  }
+
+  .clock{
+    margin-top:9px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-variant-numeric:tabular-nums;
+    font-size:10px;
+    letter-spacing:.12em;
+    color:rgba(255,255,255,.36);
+  }
+  .clock b{
+    font-size:11px;
+    font-weight:500;
+    color:rgba(255,255,255,.74);
+  }
+
+  .track-line{
+    position:absolute;
+    top:96px;
+    bottom:0;
+    left:22px;
+    width:1px;
+    background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.18),rgba(255,255,255,.04));
+  }
+
+  .now-dot{
+    position:absolute;
+    left:18px;
+    top:52%;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 0 14px rgba(255,255,255,.35);
+    z-index:4;
+  }
+  .now-dot::after{
+    content:"NOW";
+    position:absolute;
+    left:15px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:8px;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.30);
+  }
+
+  .events{
+    position:absolute;
+    inset:96px 0 0;
+    overflow:hidden;
+  }
+
+  .event{
+    --y:50vh;
+    --local:0;
+    position:absolute;
+    left:0;
+    right:0;
+    top:50%;
+    padding:0 22px 0 48px;
+    transform:translate3d(0,var(--y),0);
+    opacity:var(--local);
+    filter:blur(calc((1 - var(--local))*1.8px));
+    will-change:transform,opacity,filter;
+  }
+  .event::before{
+    content:"";
+    position:absolute;
+    left:18px;
+    top:7px;
+    width:7px;
+    height:7px;
+    border:1px solid rgba(255,255,255,.50);
+    background:#000;
+    border-radius:50%;
+  }
+  .event::after{
+    content:"";
+    position:absolute;
+    left:25px;
+    top:10px;
+    width:14px;
+    height:1px;
+    background:rgba(255,255,255,.18);
+  }
+
+  .meta{
+    display:block;
+    margin-bottom:7px;
+    font-size:9px;
+    line-height:1.4;
+    letter-spacing:.15em;
+    color:rgba(255,255,255,.35);
+  }
+  .event h3{
+    margin:0 0 9px;
+    font-size:clamp(15px,1.25vw,20px);
+    line-height:1.45;
+    letter-spacing:-.03em;
+    font-weight:500;
+    word-break:keep-all;
+  }
+  .event p{
+    margin:0;
+    color:rgba(255,255,255,.62);
+    font-size:12px;
+    line-height:1.65;
+    letter-spacing:-.025em;
+    word-break:keep-all;
+  }
+
+  /* Density differences */
+  .mole .event{max-width:100%}
+  .mole .event h3{font-size:clamp(16px,1.35vw,21px)}
+  .mole .event p{font-size:12.5px;line-height:1.7}
+
+  .sea .event{
+    padding-right:26px;
+  }
+  .sea .event p{
+    font-size:11.5px;
+    line-height:1.65;
+  }
+
+  .air .event{
+    padding-right:18px;
+  }
+  .air .event h3{
+    margin-bottom:0;
+    font-size:clamp(14px,1.15vw,18px);
+    line-height:1.45;
+  }
+  .air .event p{
+    display:none;
+  }
+
+  /* ---------- CONNECTION LINES ---------- */
+  #linkCanvas{
+    position:absolute;
+    inset:0;
+    z-index:9;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+  }
+
+  /* ---------- FINAL ---------- */
+  .final{
+    position:absolute;
+    inset:0;
+    z-index:14;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    background:#000;
+    opacity:var(--final-opacity,0);
+    pointer-events:none;
+  }
+  .final-inner{
+    width:min(920px,88vw);
+  }
+  .final small{
+    display:block;
+    margin-bottom:16px;
+    font-size:10px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.30);
+  }
+  .final h2{
+    margin:0;
+    font-size:clamp(30px,4.5vw,64px);
+    line-height:1.35;
+    letter-spacing:-.04em;
+    font-weight:500;
+  }
+  .final p{
+    margin:22px auto 0;
+    max-width:680px;
+    font-size:13px;
+    line-height:1.7;
+    color:rgba(255,255,255,.52);
+    word-break:keep-all;
+  }
+  .final-lines{
+    position:relative;
+    width:min(620px,75vw);
+    height:84px;
+    margin:42px auto 0;
+  }
+  .final-lines i{
+    position:absolute;
+    left:0;
+    right:0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+    transform-origin:center;
+  }
+  .final-lines i:nth-child(1){top:16px;transform:rotate(4deg)}
+  .final-lines i:nth-child(2){top:42px;transform:rotate(0deg)}
+  .final-lines i:nth-child(3){top:68px;transform:rotate(-4deg)}
+  .final-lines::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:42px;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#fff;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 18px rgba(255,255,255,.4);
+  }
+
+  @media (max-width:900px){
+    .brand{left:18px;top:18px}
+    .rule{right:18px;top:18px;font-size:9px}
+    .progress-rail,.progress-dot{display:none}
+    .axes{
+      padding:78px 18px 38px;
+      grid-template-columns:1.05fr 1fr .9fr;
+    }
+    .axis-head{padding:0 12px}
+    .axis-title strong{font-size:15px}
+    .axis-title span{font-size:8px}
+    .clock{font-size:8px}
+    .clock b{font-size:9px}
+    .track-line{left:13px}
+    .now-dot{left:9px}
+    .event{padding-left:31px;padding-right:10px}
+    .event::before{left:9px}
+    .event::after{left:16px;width:9px}
+    .event h3{font-size:13px}
+    .event p{font-size:10px!important;line-height:1.55!important}
+    .meta{font-size:8px}
+  }
+
+  @media (max-width:680px){
+    .axes{
+      grid-template-columns:1fr 1fr 1fr;
+      padding-left:7px;
+      padding-right:7px;
+    }
+    .axis-head{padding:0 7px}
+    .axis-title{display:block}
+    .axis-title span{display:block;margin-top:3px}
+    .clock{display:block}
+    .clock b{display:block;margin-top:3px}
+    .event{padding-left:24px;padding-right:6px}
+    .event::before{left:6px;width:6px;height:6px}
+    .event::after{left:12px;width:7px}
+    .event h3{font-size:11px;line-height:1.45}
+    .event p{font-size:8.5px!important;line-height:1.5!important}
+    .meta{font-size:7px;letter-spacing:.08em}
+    .intro h1{font-size:16vw}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .event{filter:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll-space"></div>
+
+<div class="stage">
+  <canvas id="linkCanvas"></canvas>
+
+  <div class="hud">
+    <div class="brand">DUNKIRK / THREE TIMES · ONE EVENT</div>
+    <div class="rule">LAND = 1 WEEK<br>SEA = 1 DAY<br>AIR = 1 HOUR</div>
+    <div class="progress-rail"></div>
+    <div class="progress-dot"></div>
+  </div>
+
+  <section class="intro" id="intro">
+    <div class="intro-inner">
+      <span class="eyebrow">CHRISTOPHER NOLAN / TEMPORAL STRUCTURE STUDY</span>
+      <h1>DUNKIRK</h1>
+      <p>같은 철수 작전은 세 개의 서로 다른 시간으로 전개됩니다. 해변의 일주일, 바다의 하루, 하늘의 한 시간. 서로 다른 속도로 흘러가던 사건은 마지막 순간 하나의 생존으로 겹쳐집니다.</p>
+      <div class="scroll-note">SCROLL TO RUN THREE CLOCKS ↓</div>
+    </div>
+  </section>
+
+  <section class="axes" id="axes">
+
+    <!-- C / THE MOLE / LONG -->
+    <div class="axis mole" data-axis="mole">
+      <div class="axis-head">
+        <span class="axis-code">C / LONGEST TEXT DENSITY</span>
+        <div class="axis-title">
+          <strong>THE MOLE</strong>
+          <span>1 WEEK</span>
+        </div>
+        <div class="clock"><span>LAND CLOCK</span><b id="moleClock">DAY 0.0 / 7</b></div>
+      </div>
+      <div class="track-line"></div>
+      <div class="now-dot"></div>
+      <div class="events">
+        <article class="event" data-at=".05">
+          <span class="meta">C01 · ARRIVAL</span>
+          <h3>토미는 총격을 피해 덩케르크 해변에 도착합니다.</h3>
+          <p>거리에서 살아남은 뒤 마주한 것은 전투가 아니라 끝없이 이어진 대기 행렬입니다. 수많은 병사들은 영국으로 돌아가기 위해 해변과 방파제 주변에서 구조선을 기다립니다.</p>
+        </article>
+
+        <article class="event" data-at=".17">
+          <span class="meta">C02 · THE BEACH</span>
+          <h3>해변에서는 기다리는 것 자체가 생존 전략이 됩니다.</h3>
+          <p>폭격이 이어질 때마다 병사들은 모래 위에 몸을 낮췄다가 다시 줄을 정리합니다. 전선은 눈앞에 보이지 않지만, 언제 공격이 올지 모르는 시간이 긴장감을 계속 누적시킵니다.</p>
+        </article>
+
+        <article class="event" data-at=".29">
+          <span class="meta">C03 · THE MOLE</span>
+          <h3>토미와 깁슨은 부상병을 들것에 실어 방파제 끝까지 운반합니다.</h3>
+          <p>배에 오를 수 있는 기회를 만들기 위해 두 사람은 부상병을 옮기지만, 임무를 마친 뒤에도 자신들이 승선할 자리는 보장되지 않습니다. 철수는 질서처럼 보이지만 실제로는 끊임없는 실패와 재시도의 반복입니다.</p>
+        </article>
+
+        <article class="event" data-at=".41">
+          <span class="meta">C04 · FAILED ESCAPE</span>
+          <h3>배에 올라도 탈출은 끝나지 않습니다.</h3>
+          <p>출항을 기다리던 함선이 공격받고, 물이 차오르고, 병사들은 다시 바다로 뛰어듭니다. 한 번 얻은 안전이 몇 분 뒤 다시 사라지면서 일주일의 시간은 같은 공포가 반복되는 구조로 체감됩니다.</p>
+        </article>
+
+        <article class="event" data-at=".54">
+          <span class="meta">C05 · THE TRAWLER</span>
+          <h3>좌초된 어선 안에서 병사들은 밀물이 들어오기를 기다립니다.</h3>
+          <p>움직이지 않는 배 안에서 긴장감은 서로를 향합니다. 적의 총탄이 선체를 뚫고 들어오자 누수를 막기 위해 누군가를 희생해야 한다는 논쟁까지 벌어집니다. 기다림은 시간뿐 아니라 집단의 관계도 압박합니다.</p>
+        </article>
+
+        <article class="event" data-at=".67">
+          <span class="meta">C06 · GIBSON</span>
+          <h3>깁슨이 프랑스 병사였다는 사실이 드러납니다.</h3>
+          <p>그는 영국군 군복을 입고 살아남기 위해 해변에 섞여 있었습니다. 그러나 침몰하는 배에서 빠져나오지 못합니다. 국적보다 생존이 먼저였던 그의 선택은 덩케르크의 혼란을 가장 직접적으로 보여줍니다.</p>
+        </article>
+
+        <article class="event" data-at=".80">
+          <span class="meta">C07 · CIVILIAN FLEET</span>
+          <h3>수평선에 군함 대신 작은 민간 선박들이 나타납니다.</h3>
+          <p>해변에서 일주일 동안 기다리던 병사들에게 작은 배들은 단순한 구조 수단이 아니라 귀환의 가능성 그 자체로 보입니다. 철수 작전은 군의 계획에서 민간인의 참여로 확장됩니다.</p>
+        </article>
+
+        <article class="event" data-at=".93">
+          <span class="meta">C08 · HOME</span>
+          <h3>토미는 영국으로 돌아오지만, 살아남았다는 사실을 쉽게 승리라고 부르지 못합니다.</h3>
+          <p>기차 안에서 신문에 실린 처칠의 연설을 읽으며 철수의 의미를 받아들입니다. 해변의 일주일은 영웅적 승리보다 패배 속에서 살아 돌아온 사람들의 경험으로 끝납니다.</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- B / THE SEA / MEDIUM -->
+    <div class="axis sea" data-axis="sea">
+      <div class="axis-head">
+        <span class="axis-code">B / MEDIUM TEXT DENSITY</span>
+        <div class="axis-title">
+          <strong>THE SEA</strong>
+          <span>1 DAY</span>
+        </div>
+        <div class="clock"><span>SEA CLOCK</span><b id="seaClock">00:00 / 24H</b></div>
+      </div>
+      <div class="track-line"></div>
+      <div class="now-dot"></div>
+      <div class="events">
+        <article class="event" data-at=".08">
+          <span class="meta">B01 · DEPARTURE</span>
+          <h3>도슨은 문스톤호를 직접 몰고 덩케르크로 향합니다.</h3>
+          <p>정부가 민간 선박을 징발하려 하지만, 그는 배를 넘기는 대신 아들 피터와 함께 직접 구조에 참여하기로 합니다.</p>
+        </article>
+
+        <article class="event" data-at=".24">
+          <span class="meta">B02 · SURVIVOR</span>
+          <h3>바다에서 침몰한 군함의 생존자를 구조합니다.</h3>
+          <p>구조된 병사는 배가 다시 덩케르크를 향한다는 사실을 알고 극심한 공포를 보입니다. 이미 한 번 탈출한 장소로 돌아간다는 것 자체가 그에게는 또 다른 전투입니다.</p>
+        </article>
+
+        <article class="event" data-at=".40">
+          <span class="meta">B03 · GEORGE</span>
+          <h3>혼란 속에서 조지가 크게 다칩니다.</h3>
+          <p>귀환을 요구하는 병사와 도슨 사이의 충돌은 민간인과 군인이 같은 배 안에서 서로 다른 공포를 경험하고 있음을 보여줍니다.</p>
+        </article>
+
+        <article class="event" data-at=".57">
+          <span class="meta">B04 · RESCUE</span>
+          <h3>문스톤호는 침몰한 배 주변에서 병사들을 계속 구조합니다.</h3>
+          <p>불타는 기름과 잔해 사이에서 작은 민간 선박은 전함보다 가까운 곳까지 접근해 물에 빠진 사람들을 끌어올립니다.</p>
+        </article>
+
+        <article class="event" data-at=".74">
+          <span class="meta">B05 · DUNKIRK</span>
+          <h3>도슨의 배 뒤로 수많은 민간 선박이 덩케르크에 도착합니다.</h3>
+          <p>하루 동안의 항해는 한 가족의 행동에서 거대한 구조 행렬로 확장됩니다. 바다는 탈출을 막는 경계에서 귀환을 가능하게 하는 통로로 바뀝니다.</p>
+        </article>
+
+        <article class="event" data-at=".91">
+          <span class="meta">B06 · RETURN</span>
+          <h3>영국으로 돌아온 뒤 피터는 조지의 죽음을 영웅적인 행동으로 기억하게 합니다.</h3>
+          <p>하루의 항해는 구조된 병사들뿐 아니라 구조에 나선 민간인에게도 되돌릴 수 없는 시간을 남깁니다.</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- A / THE AIR / SHORTEST -->
+    <div class="axis air" data-axis="air">
+      <div class="axis-head">
+        <span class="axis-code">A / SHORTEST TEXT DENSITY</span>
+        <div class="axis-title">
+          <strong>THE AIR</strong>
+          <span>1 HOUR</span>
+        </div>
+        <div class="clock"><span>AIR CLOCK</span><b id="airClock">00:00 / 60M</b></div>
+      </div>
+      <div class="track-line"></div>
+      <div class="now-dot"></div>
+      <div class="events">
+        <article class="event" data-at=".07">
+          <span class="meta">A01 · TAKEOFF</span>
+          <h3>세 대의 스핏파이어가 덩케르크 상공으로 향합니다.</h3>
+        </article>
+
+        <article class="event" data-at=".19">
+          <span class="meta">A02 · CONTACT</span>
+          <h3>적기가 발견되고 공중전이 시작됩니다.</h3>
+        </article>
+
+        <article class="event" data-at=".31">
+          <span class="meta">A03 · LEADER DOWN</span>
+          <h3>편대장이 격추되고 파리어가 판단을 이어받습니다.</h3>
+        </article>
+
+        <article class="event" data-at=".43">
+          <span class="meta">A04 · COLLINS</span>
+          <h3>콜린스의 기체가 바다에 불시착합니다.</h3>
+        </article>
+
+        <article class="event" data-at=".55">
+          <span class="meta">A05 · FUEL</span>
+          <h3>파리어는 줄어드는 연료를 계산하며 임무를 계속합니다.</h3>
+        </article>
+
+        <article class="event" data-at=".67">
+          <span class="meta">A06 · COVER</span>
+          <h3>해변과 구조선을 공격하려는 적기를 저지합니다.</h3>
+        </article>
+
+        <article class="event" data-at=".80">
+          <span class="meta">A07 · GLIDE</span>
+          <h3>연료가 거의 사라진 뒤에도 활공하며 마지막 적기를 격추합니다.</h3>
+        </article>
+
+        <article class="event" data-at=".93">
+          <span class="meta">A08 · LANDING</span>
+          <h3>파리어는 해변에 착륙해 기체를 불태우고 포로가 됩니다.</h3>
+        </article>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="final" id="final">
+    <div class="final-inner">
+      <small>THREE DURATIONS / ONE EVACUATION</small>
+      <h2>서로 다른 시간은<br>하나의 생존으로 수렴합니다.</h2>
+      <p>일주일의 기다림, 하루의 항해, 한 시간의 비행은 같은 순간을 향해 압축됩니다. 덩케르크는 시간을 순서가 아니라 서로 다른 밀도로 경험하게 합니다.</p>
+      <div class="final-lines"><i></i><i></i><i></i></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root=document.documentElement;
+  const intro=document.getElementById('intro');
+  const axes=document.getElementById('axes');
+  const final=document.getElementById('final');
+
+  const moleClock=document.getElementById('moleClock');
+  const seaClock=document.getElementById('seaClock');
+  const airClock=document.getElementById('airClock');
+
+  const axisEls=[...document.querySelectorAll('.axis')];
+  const canvas=document.getElementById('linkCanvas');
+  const ctx=canvas.getContext('2d');
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+  const smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
+
+  let W=0,H=0,DPR=1,raf=0;
+
+  const speed={
+    mole:.92,
+    sea:1.00,
+    air:1.08
+  };
+
+  function resize(){
+    W=innerWidth;
+    H=innerHeight;
+    DPR=Math.min(devicePixelRatio||1,2);
+    canvas.width=Math.round(W*DPR);
+    canvas.height=Math.round(H*DPR);
+    canvas.style.width=W+'px';
+    canvas.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    requestRender();
+  }
+
+  function clockText(p){
+    const days=p*7;
+    moleClock.textContent='DAY '+days.toFixed(1)+' / 7';
+
+    const totalMinutes=Math.floor(p*24*60);
+    const hh=String(Math.floor(totalMinutes/60)).padStart(2,'0');
+    const mm=String(totalMinutes%60).padStart(2,'0');
+    seaClock.textContent=hh+':'+mm+' / 24H';
+
+    const airMinutes=Math.round(p*60);
+    airClock.textContent='00:'+String(Math.min(airMinutes,60)).padStart(2,'0')+' / 60M';
+  }
+
+  function drawLinks(axisP){
+    ctx.clearRect(0,0,W,H);
+
+    if(axisP<.04 || axisP>.98) return;
+
+    const rects=axisEls.map(axis=>axis.getBoundingClientRect());
+    const y=H*.52;
+
+    ctx.save();
+    ctx.lineWidth=1;
+
+    const pulse=.12+.22*Math.sin(axisP*Math.PI);
+    ctx.strokeStyle='rgba(255,255,255,'+pulse.toFixed(3)+')';
+
+    ctx.beginPath();
+    const x1=rects[0].right-4;
+    const x2=rects[1].left+4;
+    const x3=rects[1].right-4;
+    const x4=rects[2].left+4;
+    ctx.moveTo(x1,y);
+    ctx.lineTo(x2,y);
+    ctx.moveTo(x3,y);
+    ctx.lineTo(x4,y);
+    ctx.stroke();
+
+    [rects[0],rects[1],rects[2]].forEach(r=>{
+      const x=(r.left+r.right)/2;
+      ctx.beginPath();
+      ctx.arc(x,y,2.2,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.42)';
+      ctx.fill();
+    });
+
+    /*
+      Sparse diagonal event echoes around the convergence zone.
+      They become most visible in the final third.
+    */
+    const c=clamp((axisP-.62)/.28,0,1);
+    if(c>0){
+      ctx.strokeStyle='rgba(255,255,255,'+(c*.09).toFixed(3)+')';
+      for(let i=0;i<6;i++){
+        const yy=H*(.20+i*.11);
+        ctx.beginPath();
+        ctx.moveTo(rects[0].right-4,yy);
+        ctx.lineTo(rects[2].left+4,H-(yy*.72));
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function render(){
+    raf=0;
+    const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
+    const raw=clamp(scrollY/max,0,1);
+    root.style.setProperty('--p',raw.toFixed(5));
+
+    /* Intro 0–10%, axes 7–91%, final 88–100% */
+    const introOut=smooth(clamp((raw-.035)/.075,0,1));
+    const axesIn=smooth(clamp((raw-.055)/.055,0,1));
+    const finalIn=smoother(clamp((raw-.90)/.075,0,1));
+
+    intro.style.setProperty('--intro-opacity',(1-introOut).toFixed(4));
+    intro.style.setProperty('--intro-y',(-introOut*34).toFixed(2)+'px');
+
+    axes.style.setProperty('--axes-opacity',(axesIn*(1-finalIn)).toFixed(4));
+    final.style.setProperty('--final-opacity',finalIn.toFixed(4));
+
+    const p=clamp((raw-.085)/.815,0,1);
+    clockText(p);
+
+    axisEls.forEach(axis=>{
+      const axisName=axis.dataset.axis;
+      const s=speed[axisName]||1;
+
+      axis.querySelectorAll('.event').forEach(event=>{
+        const at=parseFloat(event.dataset.at||0);
+
+        /*
+          Same global progress, slightly different perceived velocities.
+          Mole is heavier/slower, Air sharper/faster, while all still converge.
+        */
+        const delta=(at-p)*H*2.10*s;
+        const local=1-clamp(Math.abs(delta)/(H*.62),0,1);
+        const opacity=smooth(local);
+
+        event.style.setProperty('--y',delta.toFixed(2)+'px');
+        event.style.setProperty('--local',opacity.toFixed(4));
+      });
+    });
+
+    drawLinks(p);
+  }
+
+  function requestRender(){
+    if(!raf) raf=requestAnimationFrame(render);
+  }
+
+  addEventListener('scroll',requestRender,{passive:true});
+  addEventListener('resize',resize);
+  resize();
+})();
+</script>
+</body>
+</html>
