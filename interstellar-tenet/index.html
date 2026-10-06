@@ -19,10 +19,6 @@
     -webkit-overflow-scrolling:touch;
   }
 
-  /*
-    The parent page owns the entire scroll length.
-    Child documents never determine or extend this height.
-  */
   .scroll-segment{
     width:100%;
     background:#000;
@@ -104,8 +100,23 @@
   const tenetLayer = document.getElementById('tenetLayer');
   const blackMask = document.getElementById('blackMask');
 
-  const interFrame = document.getElementById('interstellarFrame');
-  const tenetFrame = document.getElementById('tenetFrame');
+  const interState = {
+    frame: document.getElementById('interstellarFrame'),
+    endSelector: '.ending',
+    endY: null,
+    naturalMax: null,
+    ready: false,
+    holdStart: .94
+  };
+
+  const tenetState = {
+    frame: document.getElementById('tenetFrame'),
+    endSelector: '.ending',
+    endY: null,
+    naturalMax: null,
+    ready: false,
+    holdStart: 1
+  };
 
   let raf = 0;
 
@@ -113,9 +124,9 @@
     return Math.max(a,Math.min(b,v));
   }
 
-  function getChild(frame){
+  function getChild(state){
     try{
-      const win = frame.contentWindow;
+      const win = state.frame.contentWindow;
       const doc = win && win.document;
       if(!win || !doc || !doc.documentElement || !doc.body) return null;
       return {win,doc};
@@ -124,29 +135,35 @@
     }
   }
 
-  function childMaxScroll(child){
-    const de = child.doc.documentElement;
-    const body = child.doc.body;
-    const height = Math.max(
-      de.scrollHeight || 0,
-      de.offsetHeight || 0,
-      body.scrollHeight || 0,
-      body.offsetHeight || 0,
-      innerHeight
-    );
-    return Math.max(height - innerHeight, 1);
+  function pageTop(el){
+    let y = 0;
+    let node = el;
+    while(node){
+      y += node.offsetTop || 0;
+      node = node.offsetParent;
+    }
+    return y;
   }
 
-  function prepareFrame(frame){
-    const child = getChild(frame);
-    if(!child) return;
+  function prepareState(state){
+    const child = getChild(state);
+    if(!child) return false;
 
-    if(!child.doc.getElementById('combined-page-fixes')){
-      const style = child.doc.createElement('style');
+    const {doc} = child;
+
+    if(!doc.getElementById('combined-page-fixes')){
+      const style = doc.createElement('style');
       style.id = 'combined-page-fixes';
       style.textContent = `
-        html{scroll-behavior:auto !important;scrollbar-width:none !important;}
-        body{scrollbar-width:none !important;}
+        html{
+          scroll-behavior:auto !important;
+          scrollbar-width:none !important;
+          overflow-anchor:none !important;
+        }
+        body{
+          scrollbar-width:none !important;
+          overflow-anchor:none !important;
+        }
         html::-webkit-scrollbar,
         body::-webkit-scrollbar{
           display:none !important;
@@ -154,15 +171,75 @@
           height:0 !important;
         }
       `;
-      child.doc.head.appendChild(style);
+      doc.head.appendChild(style);
     }
+
+    return true;
   }
 
-  function scrollChild(frame, progress){
-    const child = getChild(frame);
+  /*
+    Freeze the child geometry once.
+    Safari can change scrollHeight while transformed .flow items animate,
+    so render() must never recompute the target range.
+  */
+  function freezeGeometry(state){
+    const child = getChild(state);
+    if(!child) return false;
+
+    prepareState(state);
+
+    const {doc} = child;
+    const de = doc.documentElement;
+    const body = doc.body;
+
+    const documentHeight = Math.max(
+      de.scrollHeight || 0,
+      de.offsetHeight || 0,
+      body.scrollHeight || 0,
+      body.offsetHeight || 0,
+      innerHeight
+    );
+
+    const naturalMax = Math.max(documentHeight - innerHeight, 1);
+
+    let endY = naturalMax;
+    const ending = doc.querySelector(state.endSelector);
+
+    if(ending){
+      /*
+        Stop with the actual final section centered in the viewport.
+        This is more stable than using the very bottom of the document,
+        which includes exit padding after the final sentence.
+      */
+      const centerY = pageTop(ending) + ending.offsetHeight * .5 - innerHeight * .5;
+      endY = clamp(centerY, 0, naturalMax);
+    }
+
+    state.naturalMax = naturalMax;
+    state.endY = endY;
+    state.ready = true;
+    return true;
+  }
+
+  function scrollState(state, progress){
+    const child = getChild(state);
     if(!child) return;
-    const max = childMaxScroll(child);
-    child.win.scrollTo(0, clamp(progress,0,1) * max);
+
+    if(!state.ready){
+      if(!freezeGeometry(state)) return;
+    }
+
+    /*
+      Interstellar reaches its final sentence at 94% of its parent segment
+      and HOLDS that exact internal scroll position for the final 6%.
+      No scrollHeight read occurs here.
+    */
+    const motionProgress = state.holdStart < 1
+      ? clamp(progress / state.holdStart, 0, 1)
+      : clamp(progress, 0, 1);
+
+    const target = state.endY * motionProgress;
+    child.win.scrollTo(0, target);
   }
 
   function bounds(el){
@@ -184,10 +261,6 @@
     const g = bounds(gap);
     const t = bounds(tenetSegment);
 
-    /*
-      Each segment has a finite parent-owned timeline.
-      No child resize can ever push these boundaries farther down.
-    */
     const interTravel = Math.max(i.height - vh, 1);
     const tenetTravel = Math.max(t.height - vh, 1);
 
@@ -198,21 +271,17 @@
       tenetLayer.style.opacity = '0';
       blackMask.style.opacity = '0';
 
-      scrollChild(interFrame, p);
-      scrollChild(tenetFrame, 0);
+      scrollState(interState, p);
+      scrollState(tenetState, 0);
 
     }else if(y < g.bottom){
-      /*
-        The black gap is truly empty.
-        Both projects are explicitly invisible here, so Interstellar
-        cannot reappear after its ending.
-      */
       interLayer.style.opacity = '0';
       tenetLayer.style.opacity = '0';
       blackMask.style.opacity = '1';
 
-      scrollChild(interFrame, 1);
-      scrollChild(tenetFrame, 0);
+      /* Lock Interstellar to its final saved coordinate throughout the gap. */
+      scrollState(interState, 1);
+      scrollState(tenetState, 0);
 
     }else{
       const p = clamp((y - t.top) / tenetTravel, 0, 1);
@@ -221,8 +290,8 @@
       tenetLayer.style.opacity = '1';
       blackMask.style.opacity = '0';
 
-      scrollChild(interFrame, 1);
-      scrollChild(tenetFrame, p);
+      scrollState(interState, 1);
+      scrollState(tenetState, p);
     }
   }
 
@@ -230,19 +299,56 @@
     if(!raf) raf = requestAnimationFrame(render);
   }
 
-  [interFrame,tenetFrame].forEach(frame=>{
-    frame.addEventListener('load',()=>{
-      prepareFrame(frame);
+  function scheduleFreeze(state){
+    state.ready = false;
+
+    const attempt = () => {
+      freezeGeometry(state);
       requestRender();
-      setTimeout(requestRender,100);
-      setTimeout(requestRender,500);
+    };
+
+    requestAnimationFrame(attempt);
+    setTimeout(attempt,120);
+    setTimeout(attempt,500);
+    setTimeout(attempt,1000);
+
+    const child = getChild(state);
+    if(child && child.doc.fonts && child.doc.fonts.ready){
+      child.doc.fonts.ready.then(() => {
+        freezeGeometry(state);
+        requestRender();
+      }).catch(()=>{});
+    }
+  }
+
+  [interState,tenetState].forEach(state=>{
+    state.frame.addEventListener('load',()=>{
+      prepareState(state);
+      scheduleFreeze(state);
     });
+
+    try{
+      const doc = state.frame.contentDocument;
+      if(doc && (doc.readyState === 'interactive' || doc.readyState === 'complete')){
+        prepareState(state);
+        scheduleFreeze(state);
+      }
+    }catch(err){}
   });
 
   addEventListener('scroll',requestRender,{passive:true});
   addEventListener('wheel',requestRender,{passive:true});
   addEventListener('touchmove',requestRender,{passive:true});
-  addEventListener('resize',requestRender);
+
+  addEventListener('resize',()=>{
+    /*
+      A viewport-size change legitimately changes the desired ending center.
+      Re-freeze only on resize, never on scroll.
+    */
+    scheduleFreeze(interState);
+    scheduleFreeze(tenetState);
+  });
+
   addEventListener('pageshow',requestRender);
 
   history.scrollRestoration='manual';
