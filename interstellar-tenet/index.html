@@ -23,7 +23,7 @@
   /* One parent-owned finite timeline */
   #scrollSpace{
     width:100%;
-    height:3220vh;
+    height:2905vh;
     background:#000;
   }
 
@@ -118,21 +118,21 @@
   /*
     Long cinematic bridge:
       0–1080      Interstellar
-      1080–1220   hold final Interstellar frame
-      1220–1480   very slow fade to black
-      1480–1700   full black hold
-      1700–1980   very slow TENET fade-in
-      1980–3120   TENET
+      1080–1170   hold final Interstellar frame
+      1170–1340   slow fade to black
+      1340–1480   full black hold
+      1480–1665   TENET fade-in
+      1665–2805   TENET
 
     Total scrollSpace is +100vh so the final viewport can reach 3120vh.
   */
   const T = {
     interEnd:1080,
-    interHoldEnd:1220,
-    fadeOutEnd:1480,
-    blackHoldEnd:1700,
-    fadeInEnd:1980,
-    tenetEnd:3120
+    interHoldEnd:1170,
+    fadeOutEnd:1340,
+    blackHoldEnd:1480,
+    fadeInEnd:1665,
+    tenetEnd:2805
   };
 
   const interLayer = document.getElementById('interstellarLayer');
@@ -281,7 +281,7 @@
       interOpacity=1;
 
     }else if(yVh < T.fadeOutEnd){
-      /* Interstellar slowly sinks into black over 260vh */
+      /* Interstellar slowly sinks into black over 170vh */
       const p=smoother((yVh-T.interHoldEnd)/(T.fadeOutEnd-T.interHoldEnd));
       interP=1;
       interOpacity=1-p*.96;
