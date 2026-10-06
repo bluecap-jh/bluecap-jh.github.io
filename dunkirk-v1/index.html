@@ -366,12 +366,14 @@
   .final{
     position:absolute;
     inset:0;
-    z-index:14;
+    z-index:30;
     display:grid;
     place-items:center;
     text-align:center;
     background:#000;
-    opacity:var(--final-opacity,0);
+    opacity:1;
+    transform:translate3d(0,var(--final-y,100vh),0);
+    will-change:transform;
     pointer-events:none;
   }
   .final-inner{
@@ -792,16 +794,17 @@
     const raw=clamp(scrollY/max,0,1);
     root.style.setProperty('--p',raw.toFixed(5));
 
-    /* Intro 0–10%, axes 7–91%, final 88–100% */
+    /* Intro 0–10%, axes stay visible, final behaves like a next page.
+       The final page starts later and scrolls upward instead of cross-fading. */
     const introOut=smooth(clamp((raw-.035)/.075,0,1));
     const axesIn=smooth(clamp((raw-.055)/.055,0,1));
-    const finalIn=smoother(clamp((raw-.90)/.075,0,1));
+    const finalMove=smoother(clamp((raw-.925)/.065,0,1));
 
     intro.style.setProperty('--intro-opacity',(1-introOut).toFixed(4));
     intro.style.setProperty('--intro-y',(-introOut*34).toFixed(2)+'px');
 
-    axes.style.setProperty('--axes-opacity',(axesIn*(1-finalIn)).toFixed(4));
-    final.style.setProperty('--final-opacity',finalIn.toFixed(4));
+    axes.style.setProperty('--axes-opacity',axesIn.toFixed(4));
+    final.style.setProperty('--final-y',((1-finalMove)*100).toFixed(3)+'vh');
 
     const p=clamp((raw-.085)/.815,0,1);
     clockText(p);
