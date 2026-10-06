@@ -12,52 +12,49 @@
     width:100%;
     min-height:100%;
     background:#000;
-    color:#fff;
   }
   html{
-    overflow-y:scroll;
     overflow-x:hidden;
+    overflow-y:auto;
     scroll-behavior:auto;
   }
-  body{
-    overflow:visible;
-  }
+  body{overflow:visible}
 
-  /* Parent page has an explicit finite scroll length. */
-  #scrollSpace{
-    position:relative;
+  /*
+    The parent has only one job: provide the 200vh black transition.
+    300vh document height = 200vh maximum parent scroll distance.
+  */
+  #bridgeSpace{
     width:100%;
-    height:2600vh;
+    height:300vh;
     background:#000;
   }
 
-  .viewport-layer{
+  .project-layer{
     position:fixed;
     inset:0;
     width:100vw;
     height:100vh;
-    overflow:hidden;
     background:#000;
+    overflow:hidden;
+    opacity:0;
     pointer-events:none;
   }
 
-  #interstellarLayer{
-    z-index:2;
-    opacity:1;
-  }
+  #interstellarLayer{z-index:2}
+  #tenetLayer{z-index:3}
 
-  #tenetLayer{
-    z-index:3;
-    opacity:0;
+  .project-layer.active{
+    opacity:1;
+    pointer-events:auto;
   }
 
   .project-frame{
     display:block;
-    width:100vw;
-    height:100vh;
+    width:100%;
+    height:100%;
     border:0;
     background:#000;
-    pointer-events:none;
   }
 
   #blackMask{
@@ -68,38 +65,36 @@
     opacity:0;
     pointer-events:none;
   }
+
+  #blackMask.active{opacity:1}
 </style>
 </head>
 <body>
 
-<div id="scrollSpace" aria-hidden="true"></div>
+<div id="bridgeSpace" aria-hidden="true"></div>
 
-<div class="viewport-layer" id="interstellarLayer">
+<div class="project-layer active" id="interstellarLayer">
   <iframe
     class="project-frame"
     id="interstellarFrame"
     src="/interstellar-v20/"
     title="INTERSTELLAR — Time Study"
-    tabindex="-1"></iframe>
+    loading="eager"></iframe>
 </div>
 
-<div class="viewport-layer" id="tenetLayer">
+<div class="project-layer" id="tenetLayer">
   <iframe
     class="project-frame"
     id="tenetFrame"
     src="./tenet.html"
     title="TENET — Time Direction Study"
-    tabindex="-1"></iframe>
+    loading="eager"></iframe>
 </div>
 
-<div id="blackMask"></div>
+<div id="blackMask" aria-hidden="true"></div>
 
 <script>
 (() => {
-  const INTER_END = 1200; // vh
-  const GAP_END = 1400;   // vh (200vh black gap)
-  const TOTAL_END = 2600; // vh
-
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
   const blackMask = document.getElementById('blackMask');
@@ -107,147 +102,155 @@
   const interFrame = document.getElementById('interstellarFrame');
   const tenetFrame = document.getElementById('tenetFrame');
 
-  const state = {
-    interMax: null,
-    tenetMax: null,
-    raf: 0
-  };
+  let maxBridge = 1;
+  let mode = 'interstellar';
 
-  const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+  function refreshBridge(){
+    maxBridge = Math.max(
+      document.documentElement.scrollHeight - innerHeight,
+      1
+    );
+  }
 
-  function getChild(frame){
+  function setMode(next){
+    mode = next;
+
+    interLayer.classList.toggle('active', next === 'interstellar');
+    tenetLayer.classList.toggle('active', next === 'tenet');
+    blackMask.classList.toggle('active', next === 'gap');
+  }
+
+  function syncModeFromParent(){
+    refreshBridge();
+
+    const y = scrollY || 0;
+    const edge = 2;
+
+    if(y <= edge){
+      setMode('interstellar');
+    }else if(y >= maxBridge - edge){
+      setMode('tenet');
+    }else{
+      setMode('gap');
+    }
+  }
+
+  function childInfo(frame){
     try{
       const win = frame.contentWindow;
       const doc = win && win.document;
       if(!win || !doc || !doc.documentElement || !doc.body) return null;
       return {win,doc};
-    }catch(e){
+    }catch(err){
       return null;
     }
   }
 
-  function measureMax(frame){
-    const child = getChild(frame);
-    if(!child) return null;
-    const de = child.doc.documentElement;
-    const body = child.doc.body;
-    const h = Math.max(
-      de.scrollHeight || 0,
-      de.offsetHeight || 0,
-      body.scrollHeight || 0,
-      body.offsetHeight || 0,
-      innerHeight
-    );
-    return Math.max(h - innerHeight, 0);
-  }
-
-  function prepareFrame(frame){
-    const child = getChild(frame);
+  function prepareChild(frame, kind){
+    const child = childInfo(frame);
     if(!child) return;
-    const {doc} = child;
 
-    if(!doc.getElementById('combined-scroll-fix')){
+    const {win,doc} = child;
+
+    if(!doc.getElementById('combined-native-scroll-fix')){
       const style = doc.createElement('style');
-      style.id = 'combined-scroll-fix';
+      style.id = 'combined-native-scroll-fix';
       style.textContent = `
         html,body{
           scroll-behavior:auto !important;
-          overscroll-behavior:none !important;
           overflow-anchor:none !important;
-          scrollbar-width:none !important;
-        }
-        html::-webkit-scrollbar,
-        body::-webkit-scrollbar{
-          display:none !important;
-          width:0 !important;
-          height:0 !important;
         }
       `;
       doc.head.appendChild(style);
     }
+
+    if(win.__combinedBoundaryInstalled) return;
+    win.__combinedBoundaryInstalled = true;
+
+    /*
+      Inside each project, scrolling is 100% native.
+      Only when the project reaches its real boundary do we hand the
+      wheel delta to the parent transition.
+    */
+    win.addEventListener('wheel', (event) => {
+      const de = doc.documentElement;
+      const body = doc.body;
+
+      const max = Math.max(
+        de.scrollHeight || 0,
+        body.scrollHeight || 0
+      ) - win.innerHeight;
+
+      const y = win.scrollY || de.scrollTop || body.scrollTop || 0;
+      const threshold = 3;
+
+      if(kind === 'interstellar'){
+        const atBottom = y >= max - threshold;
+
+        if(atBottom && event.deltaY > 0){
+          event.preventDefault();
+          window.scrollBy(0, event.deltaY);
+        }
+      }
+
+      if(kind === 'tenet'){
+        const atTop = y <= threshold;
+
+        if(atTop && event.deltaY < 0){
+          event.preventDefault();
+          window.scrollBy(0, event.deltaY);
+        }
+      }
+    }, {passive:false});
+
+    /*
+      Trackpad momentum sometimes dispatches the next wheel frame to the
+      parent immediately after the iframe is hidden. The parent handles
+      the rest of the 200vh gap naturally.
+    */
   }
 
-  function cacheHeights(){
-    const a = measureMax(interFrame);
-    const b = measureMax(tenetFrame);
-    if(a !== null && a > 0) state.interMax = a;
-    if(b !== null && b > 0) state.tenetMax = b;
-  }
-
-  function childScroll(frame, target){
-    const child = getChild(frame);
-    if(!child) return;
-    child.win.scrollTo(0, Math.max(0,target));
-  }
-
-  function render(){
-    state.raf = 0;
-
-    const yVh = (window.scrollY / Math.max(innerHeight,1)) * 100;
-
-    if(yVh < INTER_END){
-      interLayer.style.opacity = '1';
-      tenetLayer.style.opacity = '0';
-      blackMask.style.opacity = '0';
-
-      const p = clamp(yVh / INTER_END, 0, 1);
-      const max = state.interMax ?? measureMax(interFrame) ?? 0;
-      childScroll(interFrame, p * max);
-      childScroll(tenetFrame, 0);
-
-    }else if(yVh < GAP_END){
-      interLayer.style.opacity = '0';
-      tenetLayer.style.opacity = '0';
-      blackMask.style.opacity = '1';
-
-      const max = state.interMax ?? 0;
-      childScroll(interFrame, max);
-      childScroll(tenetFrame, 0);
-
-    }else{
-      interLayer.style.opacity = '0';
-      tenetLayer.style.opacity = '1';
-      blackMask.style.opacity = '0';
-
-      const p = clamp((yVh - GAP_END) / (TOTAL_END - GAP_END), 0, 1);
-      const max = state.tenetMax ?? measureMax(tenetFrame) ?? 0;
-      childScroll(interFrame, state.interMax ?? 0);
-      childScroll(tenetFrame, p * max);
-    }
-  }
-
-  function requestRender(){
-    if(!state.raf) state.raf = requestAnimationFrame(render);
-  }
-
-  function initFrame(frame){
-    prepareFrame(frame);
-    cacheHeights();
-    requestRender();
-  }
-
-  interFrame.addEventListener('load',()=>initFrame(interFrame));
-  tenetFrame.addEventListener('load',()=>initFrame(tenetFrame));
-
-  addEventListener('scroll',requestRender,{passive:true});
-  addEventListener('wheel',requestRender,{passive:true});
-  addEventListener('touchmove',requestRender,{passive:true});
-
-  addEventListener('resize',()=>{
-    cacheHeights();
-    requestRender();
+  interFrame.addEventListener('load', () => {
+    prepareChild(interFrame, 'interstellar');
   });
 
-  addEventListener('pageshow',()=>{
-    cacheHeights();
-    requestRender();
+  tenetFrame.addEventListener('load', () => {
+    prepareChild(tenetFrame, 'tenet');
   });
 
-  setTimeout(()=>{cacheHeights();requestRender();},100);
-  setTimeout(()=>{cacheHeights();requestRender();},500);
-  setTimeout(()=>{cacheHeights();requestRender();},1200);
+  /*
+    Cached same-origin frames can already be complete before load listener.
+  */
+  setTimeout(() => {
+    prepareChild(interFrame, 'interstellar');
+    prepareChild(tenetFrame, 'tenet');
+  }, 100);
 
-  requestRender();
+  setTimeout(() => {
+    prepareChild(interFrame, 'interstellar');
+    prepareChild(tenetFrame, 'tenet');
+  }, 700);
+
+  addEventListener('scroll', syncModeFromParent, {passive:true});
+
+  addEventListener('resize', () => {
+    refreshBridge();
+    syncModeFromParent();
+  });
+
+  addEventListener('pageshow', () => {
+    refreshBridge();
+    syncModeFromParent();
+  });
+
+  /*
+    On the black gap, wheel scrolling belongs to the parent automatically.
+    At the two edges the corresponding iframe becomes active again.
+  */
+  history.scrollRestoration = 'manual';
+  scrollTo(0,0);
+  refreshBridge();
+  syncModeFromParent();
 })();
 </script>
 </body>
