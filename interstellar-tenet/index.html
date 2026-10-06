@@ -5,28 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>INTERSTELLAR → TENET — Time Study</title>
 <style>
+  :root{
+    --black:#000;
+  }
   *{box-sizing:border-box}
   html,body{
     margin:0;
     padding:0;
     width:100%;
     min-height:100%;
-    background:#000;
+    background:var(--black);
   }
   html{
     overflow-x:hidden;
-    overflow-y:auto;
+    overflow-y:scroll;
     scroll-behavior:auto;
   }
-  body{overflow:visible}
+  body{
+    overflow:visible;
+  }
 
   /*
-    The parent has only one job: provide the 200vh black transition.
-    300vh document height = 200vh maximum parent scroll distance.
+    One finite native document scroll.
+    Nothing inside either iframe is allowed to capture wheel/touch input.
   */
-  #bridgeSpace{
+  #scrollSpace{
     width:100%;
-    height:300vh;
+    height:2640vh;
     background:#000;
   }
 
@@ -35,18 +40,20 @@
     inset:0;
     width:100vw;
     height:100vh;
-    background:#000;
     overflow:hidden;
-    opacity:0;
+    background:#000;
     pointer-events:none;
+    will-change:opacity;
   }
 
-  #interstellarLayer{z-index:2}
-  #tenetLayer{z-index:3}
-
-  .project-layer.active{
+  #interstellarLayer{
+    z-index:2;
     opacity:1;
-    pointer-events:auto;
+  }
+
+  #tenetLayer{
+    z-index:3;
+    opacity:0;
   }
 
   .project-frame{
@@ -55,30 +62,58 @@
     height:100%;
     border:0;
     background:#000;
-  }
-
-  #blackMask{
-    position:fixed;
-    inset:0;
-    z-index:4;
-    background:#000;
-    opacity:0;
     pointer-events:none;
   }
 
-  #blackMask.active{opacity:1}
+  /*
+    The catcher sits above the iframes. This is the cross-browser fix:
+    Safari/Chrome/Firefox all send wheel and trackpad gestures to the root
+    page instead of letting the embedded document consume them.
+  */
+  #scrollCatcher{
+    position:fixed;
+    inset:0;
+    z-index:20;
+    background:transparent;
+    pointer-events:auto;
+    touch-action:pan-y;
+    cursor:default;
+  }
+
+  /*
+    Transition black is separate from the catcher so its opacity can be
+    animated without ever affecting input.
+  */
+  #blackTransition{
+    position:fixed;
+    inset:0;
+    z-index:10;
+    background:#000;
+    pointer-events:none;
+    opacity:0;
+    will-change:opacity;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    #interstellarLayer,
+    #tenetLayer,
+    #blackTransition{
+      transition:none!important;
+    }
+  }
 </style>
 </head>
 <body>
 
-<div id="bridgeSpace" aria-hidden="true"></div>
+<div id="scrollSpace" aria-hidden="true"></div>
 
-<div class="project-layer active" id="interstellarLayer">
+<div class="project-layer" id="interstellarLayer">
   <iframe
     class="project-frame"
     id="interstellarFrame"
     src="/interstellar-v20/"
     title="INTERSTELLAR — Time Study"
+    tabindex="-1"
     loading="eager"></iframe>
 </div>
 
@@ -88,169 +123,264 @@
     id="tenetFrame"
     src="./tenet.html"
     title="TENET — Time Direction Study"
+    tabindex="-1"
     loading="eager"></iframe>
 </div>
 
-<div id="blackMask" aria-hidden="true"></div>
+<div id="blackTransition" aria-hidden="true"></div>
+<div id="scrollCatcher" aria-hidden="true"></div>
 
 <script>
 (() => {
+  /*
+    Parent timeline in vh units.
+
+    0 ───────── 1050  : INTERSTELLAR native progression
+    1050 ─────── 1120 : hold the final Interstellar frame
+    1120 ─────── 1190 : fade Interstellar to black
+    1190 ─────── 1370 : pure black pause
+    1370 ─────── 1440 : TENET fades in from black
+    1440 ─────── 2540 : TENET native progression
+
+    The extra 100vh in #scrollSpace gives the root document the final
+    viewport needed to reach 2540vh of actual scroll travel.
+  */
+  const T = {
+    interEnd:1050,
+    interHoldEnd:1120,
+    fadeOutEnd:1190,
+    blackEnd:1370,
+    fadeInEnd:1440,
+    tenetEnd:2540
+  };
+
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
-  const blackMask = document.getElementById('blackMask');
+  const blackTransition = document.getElementById('blackTransition');
 
-  const interFrame = document.getElementById('interstellarFrame');
-  const tenetFrame = document.getElementById('tenetFrame');
-
-  let maxBridge = 1;
-  let mode = 'interstellar';
-
-  function refreshBridge(){
-    maxBridge = Math.max(
-      document.documentElement.scrollHeight - innerHeight,
-      1
-    );
-  }
-
-  function setMode(next){
-    mode = next;
-
-    interLayer.classList.toggle('active', next === 'interstellar');
-    tenetLayer.classList.toggle('active', next === 'tenet');
-    blackMask.classList.toggle('active', next === 'gap');
-  }
-
-  function syncModeFromParent(){
-    refreshBridge();
-
-    const y = scrollY || 0;
-    const edge = 2;
-
-    if(y <= edge){
-      setMode('interstellar');
-    }else if(y >= maxBridge - edge){
-      setMode('tenet');
-    }else{
-      setMode('gap');
+  const states = {
+    inter:{
+      frame:document.getElementById('interstellarFrame'),
+      endSelector:'.ending',
+      max:0,
+      endY:0,
+      ready:false
+    },
+    tenet:{
+      frame:document.getElementById('tenetFrame'),
+      endSelector:'.ending',
+      max:0,
+      endY:0,
+      ready:false
     }
-  }
+  };
 
-  function childInfo(frame){
+  let raf = 0;
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const smooth = t => {
+    t=clamp(t,0,1);
+    return t*t*(3-2*t);
+  };
+
+  function child(state){
     try{
-      const win = frame.contentWindow;
-      const doc = win && win.document;
+      const win=state.frame.contentWindow;
+      const doc=win && win.document;
       if(!win || !doc || !doc.documentElement || !doc.body) return null;
       return {win,doc};
-    }catch(err){
+    }catch(e){
       return null;
     }
   }
 
-  function prepareChild(frame, kind){
-    const child = childInfo(frame);
-    if(!child) return;
-
-    const {win,doc} = child;
-
-    if(!doc.getElementById('combined-native-scroll-fix')){
-      const style = doc.createElement('style');
-      style.id = 'combined-native-scroll-fix';
-      style.textContent = `
-        html,body{
-          scroll-behavior:auto !important;
-          overflow-anchor:none !important;
-        }
-      `;
-      doc.head.appendChild(style);
-    }
-
-    if(win.__combinedBoundaryInstalled) return;
-    win.__combinedBoundaryInstalled = true;
-
-    /*
-      Inside each project, scrolling is 100% native.
-      Only when the project reaches its real boundary do we hand the
-      wheel delta to the parent transition.
-    */
-    win.addEventListener('wheel', (event) => {
-      const de = doc.documentElement;
-      const body = doc.body;
-
-      const max = Math.max(
-        de.scrollHeight || 0,
-        body.scrollHeight || 0
-      ) - win.innerHeight;
-
-      const y = win.scrollY || de.scrollTop || body.scrollTop || 0;
-      const threshold = 3;
-
-      if(kind === 'interstellar'){
-        const atBottom = y >= max - threshold;
-
-        if(atBottom && event.deltaY > 0){
-          event.preventDefault();
-          window.scrollBy(0, event.deltaY);
-        }
-      }
-
-      if(kind === 'tenet'){
-        const atTop = y <= threshold;
-
-        if(atTop && event.deltaY < 0){
-          event.preventDefault();
-          window.scrollBy(0, event.deltaY);
-        }
-      }
-    }, {passive:false});
-
-    /*
-      Trackpad momentum sometimes dispatches the next wheel frame to the
-      parent immediately after the iframe is hidden. The parent handles
-      the rest of the 200vh gap naturally.
-    */
+  function absoluteTop(el){
+    let y=0;
+    for(let n=el;n;n=n.offsetParent) y+=n.offsetTop||0;
+    return y;
   }
 
-  interFrame.addEventListener('load', () => {
-    prepareChild(interFrame, 'interstellar');
-  });
+  function prepare(state){
+    const c=child(state);
+    if(!c) return false;
 
-  tenetFrame.addEventListener('load', () => {
-    prepareChild(tenetFrame, 'tenet');
+    if(!c.doc.getElementById('combined-parent-scroll-style')){
+      const style=c.doc.createElement('style');
+      style.id='combined-parent-scroll-style';
+      style.textContent=`
+        html,body{
+          scroll-behavior:auto!important;
+          overflow-anchor:none!important;
+          overscroll-behavior:none!important;
+          scrollbar-width:none!important;
+        }
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar{
+          display:none!important;
+          width:0!important;
+          height:0!important;
+        }
+      `;
+      c.doc.head.appendChild(style);
+    }
+    return true;
+  }
+
+  function measure(state){
+    const c=child(state);
+    if(!c) return false;
+    prepare(state);
+
+    const de=c.doc.documentElement;
+    const body=c.doc.body;
+    const documentHeight=Math.max(
+      de.scrollHeight||0,
+      de.offsetHeight||0,
+      body.scrollHeight||0,
+      body.offsetHeight||0,
+      innerHeight
+    );
+
+    state.max=Math.max(documentHeight-innerHeight,1);
+
+    const ending=c.doc.querySelector(state.endSelector);
+    if(ending){
+      /*
+        Finish with the final section centered instead of using document bottom
+        padding. This prevents the old "last screen → previous screen" jump.
+      */
+      state.endY=clamp(
+        absoluteTop(ending)+ending.offsetHeight*.5-innerHeight*.5,
+        0,
+        state.max
+      );
+    }else{
+      state.endY=state.max;
+    }
+
+    state.ready=true;
+    return true;
+  }
+
+  function scrollProject(state,p){
+    const c=child(state);
+    if(!c) return;
+    if(!state.ready && !measure(state)) return;
+
+    /*
+      Geometry is frozen into endY; render() never reads scrollHeight.
+      That avoids Safari changing the destination while transforms animate.
+    */
+    c.win.scrollTo(0,state.endY*clamp(p,0,1));
+  }
+
+  function render(){
+    raf=0;
+
+    const yVh=(window.scrollY/Math.max(innerHeight,1))*100;
+
+    let interOpacity=0;
+    let tenetOpacity=0;
+    let blackOpacity=0;
+    let interP=0;
+    let tenetP=0;
+
+    if(yVh < T.interEnd){
+      interOpacity=1;
+      interP=clamp(yVh/T.interEnd,0,1);
+
+    }else if(yVh < T.interHoldEnd){
+      interOpacity=1;
+      interP=1;
+
+    }else if(yVh < T.fadeOutEnd){
+      const p=smooth((yVh-T.interHoldEnd)/(T.fadeOutEnd-T.interHoldEnd));
+      interOpacity=1-p;
+      blackOpacity=p;
+      interP=1;
+
+    }else if(yVh < T.blackEnd){
+      blackOpacity=1;
+      interP=1;
+
+    }else if(yVh < T.fadeInEnd){
+      const p=smooth((yVh-T.blackEnd)/(T.fadeInEnd-T.blackEnd));
+      tenetOpacity=p;
+      blackOpacity=1-p;
+      interP=1;
+      tenetP=0;
+
+    }else{
+      tenetOpacity=1;
+      interP=1;
+      tenetP=clamp(
+        (yVh-T.fadeInEnd)/(T.tenetEnd-T.fadeInEnd),
+        0,
+        1
+      );
+    }
+
+    interLayer.style.opacity=interOpacity.toFixed(4);
+    tenetLayer.style.opacity=tenetOpacity.toFixed(4);
+    blackTransition.style.opacity=blackOpacity.toFixed(4);
+
+    scrollProject(states.inter,interP);
+    scrollProject(states.tenet,tenetP);
+  }
+
+  function requestRender(){
+    if(!raf) raf=requestAnimationFrame(render);
+  }
+
+  function settle(state){
+    state.ready=false;
+
+    const run=()=>{
+      measure(state);
+      requestRender();
+    };
+
+    requestAnimationFrame(run);
+    setTimeout(run,80);
+    setTimeout(run,260);
+    setTimeout(run,700);
+    setTimeout(run,1400);
+
+    const c=child(state);
+    if(c && c.doc.fonts && c.doc.fonts.ready){
+      c.doc.fonts.ready.then(run).catch(()=>{});
+    }
+  }
+
+  Object.values(states).forEach(state=>{
+    state.frame.addEventListener('load',()=>settle(state));
+
+    try{
+      const d=state.frame.contentDocument;
+      if(d && (d.readyState==='interactive'||d.readyState==='complete')){
+        settle(state);
+      }
+    }catch(e){}
   });
 
   /*
-    Cached same-origin frames can already be complete before load listener.
+    The fixed transparent catcher is intentionally NOT preventing wheel/touch.
+    Because it is part of the root document (not an iframe), native browser
+    scrolling moves the parent page on Safari, Chrome, Firefox and mobile.
   */
-  setTimeout(() => {
-    prepareChild(interFrame, 'interstellar');
-    prepareChild(tenetFrame, 'tenet');
-  }, 100);
+  addEventListener('scroll',requestRender,{passive:true});
+  addEventListener('wheel',requestRender,{passive:true});
+  addEventListener('touchmove',requestRender,{passive:true});
 
-  setTimeout(() => {
-    prepareChild(interFrame, 'interstellar');
-    prepareChild(tenetFrame, 'tenet');
-  }, 700);
-
-  addEventListener('scroll', syncModeFromParent, {passive:true});
-
-  addEventListener('resize', () => {
-    refreshBridge();
-    syncModeFromParent();
+  addEventListener('resize',()=>{
+    settle(states.inter);
+    settle(states.tenet);
   });
 
-  addEventListener('pageshow', () => {
-    refreshBridge();
-    syncModeFromParent();
-  });
+  addEventListener('pageshow',requestRender);
 
-  /*
-    On the black gap, wheel scrolling belongs to the parent automatically.
-    At the two edges the corresponding iframe becomes active again.
-  */
-  history.scrollRestoration = 'manual';
-  scrollTo(0,0);
-  refreshBridge();
-  syncModeFromParent();
+  history.scrollRestoration='manual';
+  requestRender();
 })();
 </script>
 </body>
