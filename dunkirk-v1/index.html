@@ -61,6 +61,8 @@
     inset:0;
     z-index:20;
     pointer-events:none;
+    opacity:var(--hud-opacity,1);
+    will-change:opacity;
   }
   .brand{
     position:absolute;
@@ -166,7 +168,9 @@
     grid-template-columns:1.2fr 1fr .82fr;
     gap:0;
     padding:88px 6.5vw 54px;
-    opacity:var(--axes-opacity,0);
+    opacity:var(--axes-opacity,.11);
+    transform:translate3d(0,var(--axes-y,16px),0);
+    will-change:opacity,transform;
   }
 
   .axis{
@@ -360,6 +364,8 @@
     width:100%;
     height:100%;
     pointer-events:none;
+    opacity:var(--links-opacity,.10);
+    will-change:opacity;
   }
 
   /* ---------- FINAL ---------- */
@@ -370,10 +376,10 @@
     display:grid;
     place-items:center;
     text-align:center;
-    background:#000;
-    opacity:1;
-    transform:translate3d(0,var(--final-y,100vh),0);
-    will-change:transform;
+    background:transparent;
+    opacity:var(--final-opacity,0);
+    transform:translate3d(0,var(--final-y,34vh),0);
+    will-change:transform,opacity;
     pointer-events:none;
   }
   .final-inner{
@@ -677,9 +683,9 @@
 
   <section class="final" id="final">
     <div class="final-inner">
-      <small>THREE DURATIONS / ONE EVACUATION</small>
-      <h2>서로 다른 시간은<br>하나의 생존으로 수렴합니다.</h2>
-      <p>일주일의 기다림, 하루의 항해, 한 시간의 비행은 같은 순간을 향해 압축됩니다. 덩케르크는 시간을 순서가 아니라 서로 다른 밀도로 경험하게 합니다.</p>
+      <small>FINAL QUESTION / THREE DURATIONS</small>
+      <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
+      <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
       <div class="final-lines"><i></i><i></i><i></i></div>
     </div>
   </section>
@@ -794,19 +800,38 @@
     const raw=clamp(scrollY/max,0,1);
     root.style.setProperty('--p',raw.toFixed(5));
 
-    /* Intro 0–10%, axes stay visible, final behaves like a next page.
-       The final page starts later and scrolls upward instead of cross-fading. */
-    const introOut=smooth(clamp((raw-.035)/.075,0,1));
-    const axesIn=smooth(clamp((raw-.055)/.055,0,1));
-    const finalMove=smoother(clamp((raw-.925)/.065,0,1));
+    /*
+      One continuous stage:
+      - At the beginning, the three axes already exist as faint lines behind DUNKIRK.
+      - As the title rises away, those lines and labels gain density.
+      - At the end, the same structure fades into a residual trace while the
+        final question rises from below. No black panel ever covers the stage.
+    */
+    const introOut=smoother(clamp((raw-.025)/.095,0,1));
+    const axesReveal=smoother(clamp((raw-.025)/.105,0,1));
+
+    const finalStart=.905;
+    const finalEnd=.985;
+    const finalMove=smoother(clamp((raw-finalStart)/(finalEnd-finalStart),0,1));
+    const structureFade=smoother(clamp((raw-.895)/.090,0,1));
 
     intro.style.setProperty('--intro-opacity',(1-introOut).toFixed(4));
-    intro.style.setProperty('--intro-y',(-introOut*34).toFixed(2)+'px');
+    intro.style.setProperty('--intro-y',(-introOut*54).toFixed(2)+'px');
 
-    axes.style.setProperty('--axes-opacity',axesIn.toFixed(4));
-    final.style.setProperty('--final-y',((1-finalMove)*100).toFixed(3)+'vh');
+    /* Faint at the opening, fully present through the main experience,
+       and still visible as a quiet trace behind the last question. */
+    const axesBase=.11 + axesReveal*.89;
+    const axesFinal=axesBase*(1-structureFade*.91);
+    axes.style.setProperty('--axes-opacity',axesFinal.toFixed(4));
+    axes.style.setProperty('--axes-y',((1-axesReveal)*16 - structureFade*10).toFixed(2)+'px');
 
-    const p=clamp((raw-.085)/.815,0,1);
+    root.style.setProperty('--links-opacity',(.10 + axesReveal*.90)*(1-structureFade*.88));
+    root.style.setProperty('--hud-opacity',(1-structureFade*.82).toFixed(4));
+
+    final.style.setProperty('--final-opacity',finalMove.toFixed(4));
+    final.style.setProperty('--final-y',((1-finalMove)*34).toFixed(3)+'vh');
+
+    const p=clamp((raw-.085)/.820,0,1);
     clockText(p);
 
     axisEls.forEach(axis=>{
