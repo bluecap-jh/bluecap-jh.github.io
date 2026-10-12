@@ -29,13 +29,16 @@
   /* ---------- SCROLL SPACE ---------- */
   .scroll-space{
     height:960vh;
+    position:relative;
     background:#000;
   }
 
   /* ---------- FIXED STAGE ---------- */
   .stage{
-    position:fixed;
-    inset:0;
+    position:sticky;
+    top:0;
+    width:100%;
+    height:100vh;
     z-index:1;
     overflow:hidden;
     background:
@@ -369,21 +372,89 @@
   }
 
   /* ---------- FINAL ---------- */
+  /*
+    The conclusion belongs to the document's scroll flow.
+    Three timeline columns continue as faint tracks across the seam;
+    no fixed full-screen panel or opacity swap covers the previous scene.
+  */
   .final{
-    position:absolute;
-    inset:0;
-    z-index:30;
+    position:relative;
+    isolation:isolate;
+    z-index:2;
+    min-height:112vh;
+    padding:22vh 7vw 24vh;
     display:grid;
     place-items:center;
     text-align:center;
-    background:transparent;
-    opacity:var(--final-opacity,0);
-    transform:translate3d(0,var(--final-y,34vh),0);
-    will-change:transform,opacity;
+    background:
+      radial-gradient(circle at 50% 46%,rgba(255,255,255,.024),transparent 33%),
+      #000;
+    overflow:hidden;
+  }
+  .final::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:-1;
     pointer-events:none;
+    background:
+      linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
+    background-size:52px 52px;
+    opacity:.45;
   }
   .final-inner{
+    position:relative;
+    z-index:2;
     width:min(920px,88vw);
+    opacity:var(--final-opacity,0);
+    transform:translate3d(0,var(--final-rise,38px),0);
+    will-change:transform,opacity;
+  }
+  .final-bridge{
+    position:absolute;
+    top:0;
+    left:6.5vw;
+    right:6.5vw;
+    height:34vh;
+    z-index:1;
+    display:grid;
+    grid-template-columns:1.2fr 1fr .82fr;
+    pointer-events:none;
+    opacity:.85;
+  }
+  .final-bridge .bridge-axis{
+    position:relative;
+    border-left:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg,rgba(255,255,255,.017),transparent 96%);
+  }
+  .final-bridge .bridge-axis:last-of-type{
+    border-right:1px solid rgba(255,255,255,.10);
+  }
+  .final-bridge .bridge-axis::after{
+    content:"";
+    position:absolute;
+    top:0;
+    left:22px;
+    width:1px;
+    height:88%;
+    background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);
+  }
+  .final-bridge svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    overflow:visible;
+  }
+  .final-bridge path{
+    fill:none;
+    stroke:rgba(255,255,255,.22);
+    stroke-width:1;
+    vector-effect:non-scaling-stroke;
+  }
+  .final-bridge circle{
+    fill:#f2f2ef;
   }
   .final small{
     display:block;
@@ -487,8 +558,7 @@
 </head>
 <body>
 
-<div class="scroll-space"></div>
-
+<main class="scroll-space">
 <div class="stage">
   <canvas id="linkCanvas"></canvas>
 
@@ -681,15 +751,29 @@
 
   </section>
 
-  <section class="final" id="final">
-    <div class="final-inner">
-      <small>FINAL QUESTION / THREE DURATIONS</small>
-      <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
-      <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
-      <div class="final-lines"><i></i><i></i><i></i></div>
-    </div>
-  </section>
 </div>
+</main>
+
+<!-- The final question is part of the same page, directly after the three axes. -->
+<section class="final" id="final">
+  <div class="final-bridge" aria-hidden="true">
+    <div class="bridge-axis"></div>
+    <div class="bridge-axis"></div>
+    <div class="bridge-axis"></div>
+    <svg viewBox="0 0 1000 310" preserveAspectRatio="none">
+      <path d="M198 0 L198 95 Q198 150 500 255" />
+      <path d="M555 0 L555 160 Q555 207 500 255" />
+      <path d="M863 0 L863 95 Q863 155 500 255" />
+      <circle cx="500" cy="255" r="4" />
+    </svg>
+  </div>
+  <div class="final-inner">
+    <small>FINAL QUESTION / THREE DURATIONS</small>
+    <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
+    <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
+    <div class="final-lines"><i></i><i></i><i></i></div>
+  </div>
+</section>
 
 <script>
 (() => {
@@ -796,40 +880,36 @@
 
   function render(){
     raf=0;
-    const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
-    const raw=clamp(scrollY/max,0,1);
+    // Progress of the pinned three-axis experience only.
+    // The conclusion after it scrolls in normal document flow.
+    const journeyHeight=Math.max(document.querySelector('.scroll-space').offsetHeight-innerHeight,1);
+    const raw=clamp(scrollY/journeyHeight,0,1);
     root.style.setProperty('--p',raw.toFixed(5));
 
     /*
-      One continuous stage:
-      - At the beginning, the three axes already exist as faint lines behind DUNKIRK.
-      - As the title rises away, those lines and labels gain density.
-      - At the end, the same structure fades into a residual trace while the
-        final question rises from below. No black panel ever covers the stage.
+      One continuous scroll: the three timelines remain legible until the
+      sticky stage naturally scrolls away, revealing the conclusion below.
+      No fullscreen finale overlay and no abrupt replacement of the stage.
     */
     const introOut=smoother(clamp((raw-.025)/.095,0,1));
     const axesReveal=smoother(clamp((raw-.025)/.105,0,1));
-
-    const finalStart=.905;
-    const finalEnd=.985;
-    const finalMove=smoother(clamp((raw-finalStart)/(finalEnd-finalStart),0,1));
-    const structureFade=smoother(clamp((raw-.895)/.090,0,1));
+    const axesOutro=smoother(clamp((raw-.955)/.045,0,1));
 
     intro.style.setProperty('--intro-opacity',(1-introOut).toFixed(4));
     intro.style.setProperty('--intro-y',(-introOut*54).toFixed(2)+'px');
 
-    /* Faint at the opening, fully present through the main experience,
-       and still visible as a quiet trace behind the last question. */
     const axesBase=.11 + axesReveal*.89;
-    const axesFinal=axesBase*(1-structureFade*.91);
-    axes.style.setProperty('--axes-opacity',axesFinal.toFixed(4));
-    axes.style.setProperty('--axes-y',((1-axesReveal)*16 - structureFade*10).toFixed(2)+'px');
+    axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOutro*.18)).toFixed(4));
+    axes.style.setProperty('--axes-y',((1-axesReveal)*16).toFixed(2)+'px');
 
-    root.style.setProperty('--links-opacity',(.10 + axesReveal*.90)*(1-structureFade*.88));
-    root.style.setProperty('--hud-opacity',(1-structureFade*.82).toFixed(4));
+    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOutro*.15)).toFixed(4));
+    root.style.setProperty('--hud-opacity',(1-axesOutro*.18).toFixed(4));
 
-    final.style.setProperty('--final-opacity',finalMove.toFixed(4));
-    final.style.setProperty('--final-y',((1-finalMove)*34).toFixed(3)+'vh');
+    // The question enters only once it physically reaches the viewport.
+    const finalTop=final.getBoundingClientRect().top;
+    const finalReveal=smoother(clamp((innerHeight*.88-finalTop)/(innerHeight*.72),0,1));
+    final.style.setProperty('--final-opacity',finalReveal.toFixed(4));
+    final.style.setProperty('--final-rise',((1-finalReveal)*38).toFixed(2)+'px');
 
     const p=clamp((raw-.085)/.820,0,1);
     clockText(p);
