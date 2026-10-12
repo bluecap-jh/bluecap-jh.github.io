@@ -29,16 +29,13 @@
   /* ---------- SCROLL SPACE ---------- */
   .scroll-space{
     height:960vh;
-    position:relative;
     background:#000;
   }
 
   /* ---------- FIXED STAGE ---------- */
   .stage{
-    position:sticky;
-    top:0;
-    width:100%;
-    height:100vh;
+    position:fixed;
+    inset:0;
     z-index:1;
     overflow:hidden;
     background:
@@ -371,90 +368,27 @@
     will-change:opacity;
   }
 
-  /* ---------- FINAL ---------- */
-  /*
-    The conclusion belongs to the document's scroll flow.
-    Three timeline columns continue as faint tracks across the seam;
-    no fixed full-screen panel or opacity swap covers the previous scene.
+  /* ---------- FINAL ----------
+     No second page, connector diagram, backdrop wipe, or artificial motion.
+     The existing three axes fade out before the question gently appears
+     on the same fixed stage. All transitions are driven by scroll progress.
   */
   .final{
-    position:relative;
-    isolation:isolate;
-    z-index:2;
-    min-height:112vh;
-    padding:22vh 7vw 24vh;
+    position:absolute;
+    inset:0;
+    z-index:30;
     display:grid;
     place-items:center;
+    padding:9vh 7vw;
     text-align:center;
-    background:
-      radial-gradient(circle at 50% 46%,rgba(255,255,255,.024),transparent 33%),
-      #000;
-    overflow:hidden;
-  }
-  .final::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    z-index:-1;
+    background:transparent;
     pointer-events:none;
-    background:
-      linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
-    background-size:52px 52px;
-    opacity:.45;
   }
   .final-inner{
-    position:relative;
-    z-index:2;
     width:min(920px,88vw);
     opacity:var(--final-opacity,0);
-    transform:translate3d(0,var(--final-rise,38px),0);
-    will-change:transform,opacity;
-  }
-  .final-bridge{
-    position:absolute;
-    top:0;
-    left:6.5vw;
-    right:6.5vw;
-    height:34vh;
-    z-index:1;
-    display:grid;
-    grid-template-columns:1.2fr 1fr .82fr;
-    pointer-events:none;
-    opacity:.85;
-  }
-  .final-bridge .bridge-axis{
-    position:relative;
-    border-left:1px solid rgba(255,255,255,.10);
-    background:linear-gradient(180deg,rgba(255,255,255,.017),transparent 96%);
-  }
-  .final-bridge .bridge-axis:last-of-type{
-    border-right:1px solid rgba(255,255,255,.10);
-  }
-  .final-bridge .bridge-axis::after{
-    content:"";
-    position:absolute;
-    top:0;
-    left:22px;
-    width:1px;
-    height:88%;
-    background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);
-  }
-  .final-bridge svg{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    overflow:visible;
-  }
-  .final-bridge path{
-    fill:none;
-    stroke:rgba(255,255,255,.22);
-    stroke-width:1;
-    vector-effect:non-scaling-stroke;
-  }
-  .final-bridge circle{
-    fill:#f2f2ef;
+    transform:translate3d(0,var(--final-rise,18px),0);
+    will-change:opacity,transform;
   }
   .final small{
     display:block;
@@ -478,36 +412,6 @@
     color:rgba(255,255,255,.52);
     word-break:keep-all;
   }
-  .final-lines{
-    position:relative;
-    width:min(620px,75vw);
-    height:84px;
-    margin:42px auto 0;
-  }
-  .final-lines i{
-    position:absolute;
-    left:0;
-    right:0;
-    height:1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
-    transform-origin:center;
-  }
-  .final-lines i:nth-child(1){top:16px;transform:rotate(4deg)}
-  .final-lines i:nth-child(2){top:42px;transform:rotate(0deg)}
-  .final-lines i:nth-child(3){top:68px;transform:rotate(-4deg)}
-  .final-lines::after{
-    content:"";
-    position:absolute;
-    left:50%;
-    top:42px;
-    width:9px;
-    height:9px;
-    border-radius:50%;
-    background:#fff;
-    transform:translate(-50%,-50%);
-    box-shadow:0 0 18px rgba(255,255,255,.4);
-  }
-
   @media (max-width:900px){
     .brand{left:18px;top:18px}
     .rule{right:18px;top:18px;font-size:9px}
@@ -558,7 +462,8 @@
 </head>
 <body>
 
-<main class="scroll-space">
+<div class="scroll-space"></div>
+
 <div class="stage">
   <canvas id="linkCanvas"></canvas>
 
@@ -751,29 +656,14 @@
 
   </section>
 
+  <section class="final" id="final">
+    <div class="final-inner">
+      <small>FINAL QUESTION / THREE DURATIONS</small>
+      <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
+      <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
+    </div>
+  </section>
 </div>
-</main>
-
-<!-- The final question is part of the same page, directly after the three axes. -->
-<section class="final" id="final">
-  <div class="final-bridge" aria-hidden="true">
-    <div class="bridge-axis"></div>
-    <div class="bridge-axis"></div>
-    <div class="bridge-axis"></div>
-    <svg viewBox="0 0 1000 310" preserveAspectRatio="none">
-      <path d="M198 0 L198 95 Q198 150 500 255" />
-      <path d="M555 0 L555 160 Q555 207 500 255" />
-      <path d="M863 0 L863 95 Q863 155 500 255" />
-      <circle cx="500" cy="255" r="4" />
-    </svg>
-  </div>
-  <div class="final-inner">
-    <small>FINAL QUESTION / THREE DURATIONS</small>
-    <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
-    <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
-    <div class="final-lines"><i></i><i></i><i></i></div>
-  </div>
-</section>
 
 <script>
 (() => {
@@ -880,36 +770,30 @@
 
   function render(){
     raf=0;
-    // Progress of the pinned three-axis experience only.
-    // The conclusion after it scrolls in normal document flow.
-    const journeyHeight=Math.max(document.querySelector('.scroll-space').offsetHeight-innerHeight,1);
-    const raw=clamp(scrollY/journeyHeight,0,1);
+    const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
+    const raw=clamp(scrollY/max,0,1);
     root.style.setProperty('--p',raw.toFixed(5));
 
-    /*
-      One continuous scroll: the three timelines remain legible until the
-      sticky stage naturally scrolls away, revealing the conclusion below.
-      No fullscreen finale overlay and no abrupt replacement of the stage.
-    */
+    // Keep all three cinematic axes legible through the experience.
+    // Their existing text and connecting graphics dissolve progressively,
+    // rather than being covered by a second section or new graphic.
     const introOut=smoother(clamp((raw-.025)/.095,0,1));
     const axesReveal=smoother(clamp((raw-.025)/.105,0,1));
-    const axesOutro=smoother(clamp((raw-.955)/.045,0,1));
+    const axesOut=smoother(clamp((raw-.872)/.099,0,1));
+    const finalIn=smoother(clamp((raw-.934)/.058,0,1));
 
     intro.style.setProperty('--intro-opacity',(1-introOut).toFixed(4));
     intro.style.setProperty('--intro-y',(-introOut*54).toFixed(2)+'px');
 
     const axesBase=.11 + axesReveal*.89;
-    axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOutro*.18)).toFixed(4));
-    axes.style.setProperty('--axes-y',((1-axesReveal)*16).toFixed(2)+'px');
+    axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOut*.985)).toFixed(4));
+    axes.style.setProperty('--axes-y',((1-axesReveal)*16 - axesOut*3).toFixed(2)+'px');
 
-    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOutro*.15)).toFixed(4));
-    root.style.setProperty('--hud-opacity',(1-axesOutro*.18).toFixed(4));
+    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOut*.99)).toFixed(4));
+    root.style.setProperty('--hud-opacity',(1-axesOut*.97).toFixed(4));
 
-    // The question enters only once it physically reaches the viewport.
-    const finalTop=final.getBoundingClientRect().top;
-    const finalReveal=smoother(clamp((innerHeight*.88-finalTop)/(innerHeight*.72),0,1));
-    final.style.setProperty('--final-opacity',finalReveal.toFixed(4));
-    final.style.setProperty('--final-rise',((1-finalReveal)*38).toFixed(2)+'px');
+    final.style.setProperty('--final-opacity',finalIn.toFixed(4));
+    final.style.setProperty('--final-rise',((1-finalIn)*18).toFixed(2)+'px');
 
     const p=clamp((raw-.085)/.820,0,1);
     clockText(p);
