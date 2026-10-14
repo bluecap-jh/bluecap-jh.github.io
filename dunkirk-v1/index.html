@@ -252,8 +252,8 @@
     width:9px;
     height:9px;
     border-radius:50%;
-    background:#fff;
-    box-shadow:0 0 18px rgba(255,255,255,.42);
+    background:rgba(255,255,255,.60);
+    box-shadow:0 0 14px rgba(255,255,255,.25);
     z-index:4;
   }
   .events{
@@ -716,19 +716,28 @@
       start:10,
       end:90,
       knots:[0,.08,.19,.31,.43,.55,.67,.80,.93,1],
-      values:[0,.08,.19,.31,.43,.55,.67,.80,.93,1]
+      values:[0,.08,.19,.31,.43,.55,.67,.80,.93,1],
+      waveAmp:0.010,
+      waveFreq:4.0,
+      phase:0.00
     },
     sea:{
       start:10,
       end:90,
       knots:[0,.16,.34,.48,.62,.76,.88,.94,1],
-      values:[0,.01,.035,.08,.16,.30,.52,.76,1]
+      values:[0,.01,.035,.08,.16,.30,.52,.76,1],
+      waveAmp:0.022,
+      waveFreq:5.5,
+      phase:0.85
     },
     air:{
       start:10,
       end:90,
       knots:[0,.05,.14,.26,.40,.58,.74,.88,.95,1],
-      values:[0,.28,.52,.72,.84,.90,.93,.95,.97,1]
+      values:[0,.28,.52,.72,.84,.90,.93,.95,.97,1],
+      waveAmp:0.040,
+      waveFreq:7.0,
+      phase:1.70
     }
   };
 
@@ -755,7 +764,18 @@
     axisEls.forEach(axis=>{
       const name=axis.dataset.axis;
       const cfg=nowMotion[name];
-      const q=piecewiseProgress(p,cfg);
+      const baseQ=piecewiseProgress(p,cfg);
+
+      /*
+        Scroll-driven temporal pulse:
+        - keeps each dot moving even through long plateaus
+        - different frequency/amplitude per timeline
+        - strongest on AIR, medium on SEA, lightest on MOLE
+        - fades to zero at both ends so all three still share the same start/end
+      */
+      const envelope=Math.sin(Math.PI*clamp(p,0,1));
+      const wave=Math.sin((p*cfg.waveFreq+cfg.phase)*Math.PI*2);
+      const q=clamp(baseQ + wave*cfg.waveAmp*envelope,0,1);
 
       progress[name]=q;
 
