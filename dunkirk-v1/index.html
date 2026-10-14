@@ -253,7 +253,7 @@
     height:9px;
     border-radius:50%;
     background:#fff;
-    box-shadow:0 0 14px rgba(255,255,255,.35);
+    box-shadow:0 0 18px rgba(255,255,255,.42);
     z-index:4;
   }
   .events{
@@ -703,20 +703,25 @@
   const motionKnots=[0,.08,.19,.31,.43,.55,.67,.80,.93,1];
 
   const nowMotion={
+    /*
+      Reference axis: almost even movement.
+      The other two redistribute much larger portions of the same total
+      distance between event boundaries, creating visible vertical separation.
+    */
     mole:{
-      start:22,
-      end:82,
+      start:16,
+      end:86,
       values:[0,.08,.19,.31,.43,.55,.67,.80,.93,1]
     },
     sea:{
-      start:22,
-      end:82,
-      values:[0,.04,.14,.36,.40,.61,.64,.86,.90,1]
+      start:16,
+      end:86,
+      values:[0,.01,.05,.10,.47,.50,.54,.72,.84,1]
     },
     air:{
-      start:22,
-      end:82,
-      values:[0,.15,.20,.43,.45,.68,.70,.92,.95,1]
+      start:16,
+      end:86,
+      values:[0,.24,.28,.57,.60,.82,.84,.91,.96,1]
     }
   };
 
