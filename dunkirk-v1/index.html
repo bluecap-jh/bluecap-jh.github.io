@@ -385,10 +385,56 @@
     pointer-events:none;
   }
   .final-inner{
+    position:relative;
+    z-index:2;
     width:min(920px,88vw);
+    margin-top:24vh;
     opacity:var(--final-opacity,0);
     transform:translate3d(0,var(--final-rise,18px),0);
     will-change:opacity,transform;
+  }
+
+  /* Vertical convergence keeps the same visual language as the three
+     story columns: three time axes descend and become one event. */
+  .final-convergence{
+    --convergence-progress:0;
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    opacity:var(--final-graphic-opacity,0);
+    will-change:opacity;
+  }
+  .final-convergence svg{
+    display:block;
+    width:100%;
+    height:100%;
+    overflow:visible;
+  }
+  .final-convergence .time-path,
+  .final-convergence .single-path{
+    fill:none;
+    stroke:rgba(255,255,255,.26);
+    stroke-width:1;
+    vector-effect:non-scaling-stroke;
+    path-length:1;
+    stroke-dasharray:1;
+    stroke-dashoffset:calc(1 - var(--convergence-progress));
+  }
+  .final-convergence .single-path{
+    stroke:rgba(255,255,255,.34);
+  }
+  .final-convergence .time-dot{
+    fill:#000;
+    stroke:rgba(255,255,255,.55);
+    stroke-width:1;
+    vector-effect:non-scaling-stroke;
+    opacity:var(--convergence-progress);
+  }
+  .final-convergence .meeting-dot{
+    fill:#fff;
+    opacity:var(--convergence-progress);
+    filter:drop-shadow(0 0 8px rgba(255,255,255,.28));
   }
   .final small{
     display:block;
@@ -657,10 +703,22 @@
   </section>
 
   <section class="final" id="final">
+    <div class="final-convergence" id="finalConvergence" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path class="time-path" pathLength="1" d="M28 5 C28 19 36 30 50 42" />
+        <path class="time-path" pathLength="1" d="M50 5 L50 42" />
+        <path class="time-path" pathLength="1" d="M72 5 C72 19 64 30 50 42" />
+        <path class="single-path" pathLength="1" d="M50 42 L50 50" />
+        <circle class="time-dot" cx="28" cy="5" r=".55" />
+        <circle class="time-dot" cx="50" cy="5" r=".55" />
+        <circle class="time-dot" cx="72" cy="5" r=".55" />
+        <circle class="meeting-dot" cx="50" cy="42" r=".7" />
+      </svg>
+    </div>
     <div class="final-inner">
       <small>FINAL QUESTION / THREE DURATIONS</small>
-      <h2>서로 다른 시간의 흐름을<br>경험하셨나요?</h2>
-      <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 서로 다른 속도와 정보의 밀도로 흘렀습니다. 같은 철수 작전이 세 개의 시간축으로 겹쳐지는 감각을 스크롤을 따라 경험해 보셨나요?</p>
+      <h2>같은 사건 안에서,<br>서로 다른 시간의 밀도를 느끼셨나요?</h2>
+      <p>해변의 일주일, 바다의 하루, 하늘의 한 시간은 같은 철수 작전 안에서도 서로 다른 속도와 정보량으로 흘렀습니다. 세 시간축을 동시에 따라가며 그 차이를 어떻게 경험하셨나요?</p>
     </div>
   </section>
 </div>
@@ -671,6 +729,7 @@
   const intro=document.getElementById('intro');
   const axes=document.getElementById('axes');
   const final=document.getElementById('final');
+  const finalConvergence=document.getElementById('finalConvergence');
 
   const moleClock=document.getElementById('moleClock');
   const seaClock=document.getElementById('seaClock');
@@ -786,14 +845,21 @@
     intro.style.setProperty('--intro-y',(-introOut*54).toFixed(2)+'px');
 
     const axesBase=.11 + axesReveal*.89;
-    axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOut*.985)).toFixed(4));
+    /* Leave a faint vertical trace of the original three timelines behind
+       the final question instead of replacing them with a new panel. */
+    axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOut*.92)).toFixed(4));
     axes.style.setProperty('--axes-y',((1-axesReveal)*16 - axesOut*3).toFixed(2)+'px');
 
-    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOut*.99)).toFixed(4));
-    root.style.setProperty('--hud-opacity',(1-axesOut*.97).toFixed(4));
+    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOut*.95)).toFixed(4));
+    root.style.setProperty('--hud-opacity',(1-axesOut*.94).toFixed(4));
 
     final.style.setProperty('--final-opacity',finalIn.toFixed(4));
-    final.style.setProperty('--final-rise',((1-finalIn)*18).toFixed(2)+'px');
+    final.style.setProperty('--final-rise',((1-finalIn)*22).toFixed(2)+'px');
+
+    /* New ending graphic: vertical, not horizontal. It grows downward from
+       the three existing time directions and converges above the question. */
+    finalConvergence.style.setProperty('--convergence-progress',finalIn.toFixed(4));
+    finalConvergence.style.setProperty('--final-graphic-opacity',(finalIn*.72).toFixed(4));
 
     const p=clamp((raw-.085)/.820,0,1);
     clockText(p);
