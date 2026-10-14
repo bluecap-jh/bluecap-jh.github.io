@@ -252,8 +252,8 @@
     width:9px;
     height:9px;
     border-radius:50%;
-    background:rgba(255,255,255,.60);
-    box-shadow:0 0 14px rgba(255,255,255,.25);
+    background:rgba(255,255,255,.80);
+    box-shadow:0 0 16px rgba(255,255,255,.32);
     z-index:4;
   }
   .events{
@@ -366,7 +366,7 @@
     position:relative;
     z-index:2;
     width:min(920px,88vw);
-    margin-top:24vh;
+    margin-top:0;
     opacity:var(--final-opacity,0);
     transform:translate3d(0,var(--final-rise,18px),0);
     will-change:opacity,transform;
@@ -735,8 +735,8 @@
       end:90,
       knots:[0,.05,.14,.26,.40,.58,.74,.88,.95,1],
       values:[0,.28,.52,.72,.84,.90,.93,.95,.97,1],
-      waveAmp:0.040,
-      waveFreq:7.0,
+      waveAmp:0.024,
+      waveFreq:6.4,
       phase:1.70
     }
   };
@@ -775,7 +775,21 @@
       */
       const envelope=Math.sin(Math.PI*clamp(p,0,1));
       const wave=Math.sin((p*cfg.waveFreq+cfg.phase)*Math.PI*2);
-      const q=clamp(baseQ + wave*cfg.waveAmp*envelope,0,1);
+
+      let temporalOffset=wave*cfg.waveAmp*envelope;
+
+      /*
+        THE AIR gets one explicit reverse action:
+        during this scroll interval the marker climbs upward,
+        reaches a clear peak, then returns to its original trajectory.
+        The sine window starts and ends at zero, so there is no jump.
+      */
+      if(name==='air' && p>=.50 && p<=.68){
+        const reverseT=(p-.50)/.18;
+        temporalOffset -= Math.sin(reverseT*Math.PI)*.135;
+      }
+
+      const q=clamp(baseQ + temporalOffset,0,1);
 
       progress[name]=q;
 
