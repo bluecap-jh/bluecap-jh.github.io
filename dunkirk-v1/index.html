@@ -256,17 +256,6 @@
     box-shadow:0 0 14px rgba(255,255,255,.35);
     z-index:4;
   }
-  .now-dot::after{
-    content:"NOW";
-    position:absolute;
-    left:15px;
-    top:50%;
-    transform:translateY(-50%);
-    font-size:8px;
-    letter-spacing:.14em;
-    color:rgba(255,255,255,.30);
-  }
-
   .events{
     position:absolute;
     inset:96px 0 0;
@@ -700,16 +689,50 @@
     airClock.textContent='00:'+String(Math.min(airMinutes,60)).padStart(2,'0')+' / 60M';
   }
 
-  /* Subtle differences only: same overall journey, different temporal feel. */
+  /*
+    NOW DOT MOTION
+    One scroll timeline, three different distance maps.
+
+    THE MOLE is the reference: equal scroll distance = equal dot distance.
+    THE SEA and THE AIR redistribute that distance at each event interval:
+    some intervals are deliberately slow, then the next interval catches up.
+
+    All maps begin at 0 and finish at 1, so the three dots always meet at
+    the exact same final position.
+  */
+  const motionKnots=[0,.08,.19,.31,.43,.55,.67,.80,.93,1];
+
   const nowMotion={
-    mole:{delay:0.000,power:1.10,start:21.5,end:76.5},
-    sea:{delay:0.012,power:1.02,start:22.0,end:79.5},
-    air:{delay:0.024,power:.94,start:22.5,end:82.0}
+    mole:{
+      start:22,
+      end:82,
+      values:[0,.08,.19,.31,.43,.55,.67,.80,.93,1]
+    },
+    sea:{
+      start:22,
+      end:82,
+      values:[0,.04,.14,.36,.40,.61,.64,.86,.90,1]
+    },
+    air:{
+      start:22,
+      end:82,
+      values:[0,.15,.20,.43,.45,.68,.70,.92,.95,1]
+    }
   };
 
-  function axisProgress(p,cfg){
-    const local=clamp((p-cfg.delay)/(1-cfg.delay),0,1);
-    return Math.pow(local,cfg.power);
+  function piecewiseProgress(p,values){
+    p=clamp(p,0,1);
+
+    for(let i=0;i<motionKnots.length-1;i++){
+      const a=motionKnots[i];
+      const b=motionKnots[i+1];
+
+      if(p<=b || i===motionKnots.length-2){
+        const t=clamp((p-a)/Math.max(b-a,.0001),0,1);
+        return values[i]+(values[i+1]-values[i])*t;
+      }
+    }
+    return 1;
   }
 
   function updateNowDots(p){
@@ -718,7 +741,8 @@
     axisEls.forEach(axis=>{
       const name=axis.dataset.axis;
       const cfg=nowMotion[name];
-      const q=axisProgress(p,cfg);
+      const q=piecewiseProgress(p,cfg.values);
+
       progress[name]=q;
 
       const top=cfg.start+(cfg.end-cfg.start)*q;
