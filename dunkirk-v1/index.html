@@ -247,7 +247,8 @@
   .now-dot{
     position:absolute;
     left:18px;
-    top:52%;
+    top:var(--now-top,22%);
+    transform:translateY(-50%);
     width:9px;
     height:9px;
     border-radius:50%;
@@ -356,18 +357,6 @@
     display:none;
   }
 
-  /* ---------- CONNECTION LINES ---------- */
-  #linkCanvas{
-    position:absolute;
-    inset:0;
-    z-index:9;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-    opacity:var(--links-opacity,.10);
-    will-change:opacity;
-  }
-
   /* ---------- FINAL ----------
      No second page, connector diagram, backdrop wipe, or artificial motion.
      The existing three axes fade out before the question gently appears
@@ -394,48 +383,6 @@
     will-change:opacity,transform;
   }
 
-  /* Vertical convergence keeps the same visual language as the three
-     story columns: three time axes descend and become one event. */
-  .final-convergence{
-    --convergence-progress:0;
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    opacity:var(--final-graphic-opacity,0);
-    will-change:opacity;
-  }
-  .final-convergence svg{
-    display:block;
-    width:100%;
-    height:100%;
-    overflow:visible;
-  }
-  .final-convergence .time-path,
-  .final-convergence .single-path{
-    fill:none;
-    stroke:rgba(255,255,255,.26);
-    stroke-width:1;
-    vector-effect:non-scaling-stroke;
-    path-length:1;
-    stroke-dasharray:1;
-    stroke-dashoffset:calc(1 - var(--convergence-progress));
-  }
-  .final-convergence .single-path{
-    stroke:rgba(255,255,255,.34);
-  }
-  .final-convergence .time-dot{
-    fill:#000;
-    stroke:rgba(255,255,255,.55);
-    stroke-width:1;
-    vector-effect:non-scaling-stroke;
-    opacity:var(--convergence-progress);
-  }
-  .final-convergence .meeting-dot{
-    fill:#fff;
-    opacity:var(--convergence-progress);
-    filter:drop-shadow(0 0 8px rgba(255,255,255,.28));
-  }
   .final small{
     display:block;
     margin-bottom:16px;
@@ -511,8 +458,6 @@
 <div class="scroll-space"></div>
 
 <div class="stage">
-  <canvas id="linkCanvas"></canvas>
-
   <div class="hud">
     <div class="brand">DUNKIRK / THREE TIMES · ONE EVENT</div>
     <div class="rule">LAND = 1 WEEK<br>SEA = 1 DAY<br>AIR = 1 HOUR</div>
@@ -703,18 +648,6 @@
   </section>
 
   <section class="final" id="final">
-    <div class="final-convergence" id="finalConvergence" aria-hidden="true">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path class="time-path" pathLength="1" d="M28 5 C28 19 36 30 50 42" />
-        <path class="time-path" pathLength="1" d="M50 5 L50 42" />
-        <path class="time-path" pathLength="1" d="M72 5 C72 19 64 30 50 42" />
-        <path class="single-path" pathLength="1" d="M50 42 L50 50" />
-        <circle class="time-dot" cx="28" cy="5" r=".55" />
-        <circle class="time-dot" cx="50" cy="5" r=".55" />
-        <circle class="time-dot" cx="72" cy="5" r=".55" />
-        <circle class="meeting-dot" cx="50" cy="42" r=".7" />
-      </svg>
-    </div>
     <div class="final-inner">
       <small>FINAL QUESTION / THREE DURATIONS</small>
       <h2>같은 사건 안에서,<br>서로 다른 시간의 밀도를 느끼셨나요?</h2>
@@ -729,21 +662,18 @@
   const intro=document.getElementById('intro');
   const axes=document.getElementById('axes');
   const final=document.getElementById('final');
-  const finalConvergence=document.getElementById('finalConvergence');
 
   const moleClock=document.getElementById('moleClock');
   const seaClock=document.getElementById('seaClock');
   const airClock=document.getElementById('airClock');
 
   const axisEls=[...document.querySelectorAll('.axis')];
-  const canvas=document.getElementById('linkCanvas');
-  const ctx=canvas.getContext('2d');
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
   const smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
 
-  let W=0,H=0,DPR=1,raf=0;
+  let W=0,H=0,raf=0;
 
   const speed={
     mole:.92,
@@ -754,77 +684,48 @@
   function resize(){
     W=innerWidth;
     H=innerHeight;
-    DPR=Math.min(devicePixelRatio||1,2);
-    canvas.width=Math.round(W*DPR);
-    canvas.height=Math.round(H*DPR);
-    canvas.style.width=W+'px';
-    canvas.style.height=H+'px';
-    ctx.setTransform(DPR,0,0,DPR,0,0);
     requestRender();
   }
 
-  function clockText(p){
-    const days=p*7;
+  function clockText(moleP,seaP,airP){
+    const days=moleP*7;
     moleClock.textContent='DAY '+days.toFixed(1)+' / 7';
 
-    const totalMinutes=Math.floor(p*24*60);
+    const totalMinutes=Math.floor(seaP*24*60);
     const hh=String(Math.floor(totalMinutes/60)).padStart(2,'0');
     const mm=String(totalMinutes%60).padStart(2,'0');
     seaClock.textContent=hh+':'+mm+' / 24H';
 
-    const airMinutes=Math.round(p*60);
+    const airMinutes=Math.round(airP*60);
     airClock.textContent='00:'+String(Math.min(airMinutes,60)).padStart(2,'0')+' / 60M';
   }
 
-  function drawLinks(axisP){
-    ctx.clearRect(0,0,W,H);
+  /* Subtle differences only: same overall journey, different temporal feel. */
+  const nowMotion={
+    mole:{delay:0.000,power:1.10,start:21.5,end:76.5},
+    sea:{delay:0.012,power:1.02,start:22.0,end:79.5},
+    air:{delay:0.024,power:.94,start:22.5,end:82.0}
+  };
 
-    if(axisP<.04 || axisP>.98) return;
+  function axisProgress(p,cfg){
+    const local=clamp((p-cfg.delay)/(1-cfg.delay),0,1);
+    return Math.pow(local,cfg.power);
+  }
 
-    const rects=axisEls.map(axis=>axis.getBoundingClientRect());
-    const y=H*.52;
+  function updateNowDots(p){
+    const progress={};
 
-    ctx.save();
-    ctx.lineWidth=1;
+    axisEls.forEach(axis=>{
+      const name=axis.dataset.axis;
+      const cfg=nowMotion[name];
+      const q=axisProgress(p,cfg);
+      progress[name]=q;
 
-    const pulse=.12+.22*Math.sin(axisP*Math.PI);
-    ctx.strokeStyle='rgba(255,255,255,'+pulse.toFixed(3)+')';
-
-    ctx.beginPath();
-    const x1=rects[0].right-4;
-    const x2=rects[1].left+4;
-    const x3=rects[1].right-4;
-    const x4=rects[2].left+4;
-    ctx.moveTo(x1,y);
-    ctx.lineTo(x2,y);
-    ctx.moveTo(x3,y);
-    ctx.lineTo(x4,y);
-    ctx.stroke();
-
-    [rects[0],rects[1],rects[2]].forEach(r=>{
-      const x=(r.left+r.right)/2;
-      ctx.beginPath();
-      ctx.arc(x,y,2.2,0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,.42)';
-      ctx.fill();
+      const top=cfg.start+(cfg.end-cfg.start)*q;
+      axis.style.setProperty('--now-top',top.toFixed(3)+'%');
     });
 
-    /*
-      Sparse diagonal event echoes around the convergence zone.
-      They become most visible in the final third.
-    */
-    const c=clamp((axisP-.62)/.28,0,1);
-    if(c>0){
-      ctx.strokeStyle='rgba(255,255,255,'+(c*.09).toFixed(3)+')';
-      for(let i=0;i<6;i++){
-        const yy=H*(.20+i*.11);
-        ctx.beginPath();
-        ctx.moveTo(rects[0].right-4,yy);
-        ctx.lineTo(rects[2].left+4,H-(yy*.72));
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
+    clockText(progress.mole,progress.sea,progress.air);
   }
 
   function render(){
@@ -850,19 +751,13 @@
     axes.style.setProperty('--axes-opacity',(axesBase*(1-axesOut*.92)).toFixed(4));
     axes.style.setProperty('--axes-y',((1-axesReveal)*16 - axesOut*3).toFixed(2)+'px');
 
-    root.style.setProperty('--links-opacity',((.10+axesReveal*.90)*(1-axesOut*.95)).toFixed(4));
     root.style.setProperty('--hud-opacity',(1-axesOut*.94).toFixed(4));
 
     final.style.setProperty('--final-opacity',finalIn.toFixed(4));
     final.style.setProperty('--final-rise',((1-finalIn)*22).toFixed(2)+'px');
 
-    /* New ending graphic: vertical, not horizontal. It grows downward from
-       the three existing time directions and converges above the question. */
-    finalConvergence.style.setProperty('--convergence-progress',finalIn.toFixed(4));
-    finalConvergence.style.setProperty('--final-graphic-opacity',(finalIn*.72).toFixed(4));
-
     const p=clamp((raw-.085)/.820,0,1);
-    clockText(p);
+    updateNowDots(p);
 
     axisEls.forEach(axis=>{
       const axisName=axis.dataset.axis;
@@ -884,7 +779,6 @@
       });
     });
 
-    drawLinks(p);
   }
 
   function requestRender(){
