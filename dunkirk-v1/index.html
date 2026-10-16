@@ -711,33 +711,39 @@
 
     All three deliberately reconverge only near the very end.
   */
+  /*
+    Three time axes cross one another repeatedly rather than simply spreading
+    apart. The vertical range is restrained, but each interval can overtake,
+    slow, reverse slightly, and hand the lead to another timeline.
+    Every curve still begins together and ends together.
+  */
   const nowMotion={
     mole:{
-      start:10,
-      end:90,
-      knots:[0,.08,.19,.31,.43,.55,.67,.80,.93,1],
-      values:[0,.08,.19,.31,.43,.55,.67,.80,.93,1],
-      waveAmp:0.010,
-      waveFreq:4.0,
-      phase:0.00
+      start:12,
+      end:88,
+      knots:[0,.07,.14,.21,.28,.35,.42,.49,.56,.63,.70,.77,.84,.91,.96,1],
+      values:[0,.07,.14,.21,.28,.35,.42,.49,.56,.63,.70,.77,.84,.91,.96,1],
+      waveAmp:.008,
+      waveFreq:3.2,
+      phase:0
     },
     sea:{
-      start:10,
-      end:90,
-      knots:[0,.16,.34,.48,.62,.76,.88,.94,1],
-      values:[0,.01,.035,.08,.16,.30,.52,.76,1],
-      waveAmp:0.022,
-      waveFreq:5.5,
-      phase:0.85
+      start:12,
+      end:88,
+      knots:[0,.07,.14,.21,.28,.35,.42,.49,.56,.63,.70,.77,.84,.91,.96,1],
+      values:[0,.105,.125,.255,.265,.405,.395,.535,.525,.675,.665,.815,.805,.925,.945,1],
+      waveAmp:.016,
+      waveFreq:5.1,
+      phase:.42
     },
     air:{
-      start:10,
-      end:90,
-      knots:[0,.05,.14,.26,.40,.58,.74,.88,.95,1],
-      values:[0,.28,.52,.72,.84,.90,.93,.95,.97,1],
-      waveAmp:0.024,
-      waveFreq:6.4,
-      phase:1.70
+      start:12,
+      end:88,
+      knots:[0,.07,.14,.21,.28,.35,.42,.49,.56,.63,.70,.77,.84,.91,.96,1],
+      values:[0,.035,.185,.175,.335,.325,.485,.475,.645,.625,.785,.775,.895,.885,.965,1],
+      waveAmp:.018,
+      waveFreq:6.3,
+      phase:1.08
     }
   };
 
@@ -767,30 +773,42 @@
       const baseQ=piecewiseProgress(p,cfg);
 
       /*
-        Scroll-driven temporal pulse:
-        - keeps each dot moving even through long plateaus
-        - different frequency/amplitude per timeline
-        - strongest on AIR, medium on SEA, lightest on MOLE
-        - fades to zero at both ends so all three still share the same start/end
+        Small scroll-driven oscillations increase the number of overtakes.
+        They are strongest in the middle and vanish at the beginning/end,
+        so the dots still share exact start and finish positions.
       */
       const envelope=Math.sin(Math.PI*clamp(p,0,1));
       const wave=Math.sin((p*cfg.waveFreq+cfg.phase)*Math.PI*2);
-
-      let temporalOffset=wave*cfg.waveAmp*envelope;
+      let offset=wave*cfg.waveAmp*envelope;
 
       /*
-        THE AIR gets one explicit reverse action:
-        during this scroll interval the marker climbs upward,
-        reaches a clear peak, then returns to its original trajectory.
-        The sine window starts and ends at zero, so there is no jump.
+        AIR gets two short reverse pulses instead of one long extreme move.
+        This makes it rise through the other markers, cross them, and then
+        return to the forward flow without sitting at the bottom.
       */
-      if(name==='air' && p>=.50 && p<=.68){
-        const reverseT=(p-.50)/.18;
-        temporalOffset -= Math.sin(reverseT*Math.PI)*.135;
+      if(name==='air' && p>=.31 && p<=.41){
+        const t=(p-.31)/.10;
+        offset-=Math.sin(t*Math.PI)*.042;
+      }
+      if(name==='air' && p>=.66 && p<=.76){
+        const t=(p-.66)/.10;
+        offset-=Math.sin(t*Math.PI)*.036;
       }
 
-      const q=clamp(baseQ + temporalOffset,0,1);
+      /*
+        SEA gets complementary catch-up pulses. They intentionally happen
+        between AIR's reversals, creating repeated horizontal crossings.
+      */
+      if(name==='sea' && p>=.44 && p<=.53){
+        const t=(p-.44)/.09;
+        offset+=Math.sin(t*Math.PI)*.032;
+      }
+      if(name==='sea' && p>=.79 && p<=.87){
+        const t=(p-.79)/.08;
+        offset+=Math.sin(t*Math.PI)*.028;
+      }
 
+      const q=clamp(baseQ+offset,0,1);
       progress[name]=q;
 
       const top=cfg.start+(cfg.end-cfg.start)*q;
