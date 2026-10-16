@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEMENTO — Two Directions / One Present</title>
+<style>
+  :root{
+    --raw:0;
+    --main-opacity:0;
+    --hud-opacity:1;
+    --final-opacity:0;
+    --red:#d95a5f;
+    --paper:#efefec;
+    --muted:rgba(255,255,255,.42);
+    --line:rgba(255,255,255,.15);
+  }
+  *{box-sizing:border-box}
+  html{background:#000;scroll-behavior:auto}
+  body{
+    margin:0;
+    background:#000;
+    color:var(--paper);
+    font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
+    overflow-x:hidden;
+  }
+  .scroll-space{height:1080vh}
+  .stage{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 50%,rgba(255,255,255,.025),transparent 34%),
+      #000;
+  }
+  .stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(rgba(255,255,255,.010) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.010) 1px,transparent 1px);
+    background-size:54px 54px;
+    opacity:.38;
+  }
+
+  /* HUD */
+  .hud{
+    position:absolute;
+    inset:0;
+    z-index:30;
+    pointer-events:none;
+    opacity:var(--hud-opacity);
+  }
+  .brand{
+    position:absolute;
+    top:24px;
+    left:28px;
+    font-size:10px;
+    letter-spacing:.22em;
+    color:rgba(255,255,255,.68);
+  }
+  .rule{
+    position:absolute;
+    top:24px;
+    right:28px;
+    text-align:right;
+    font-size:9px;
+    line-height:1.7;
+    letter-spacing:.15em;
+    color:rgba(255,255,255,.35);
+  }
+  .progress{
+    position:absolute;
+    left:28px;
+    top:50%;
+    transform:translateY(-50%);
+    width:1px;
+    height:34vh;
+    background:rgba(255,255,255,.10);
+  }
+  .progress::after{
+    content:"";
+    position:absolute;
+    inset:0 auto auto 0;
+    width:1px;
+    height:calc(var(--raw) * 100%);
+    background:rgba(255,255,255,.62);
+  }
+  .progress-dot{
+    position:absolute;
+    left:24px;
+    top:calc(33vh + var(--raw) * 34vh);
+    width:9px;height:9px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.7);
+    background:#000;
+    transform:translateY(-50%);
+  }
+
+  /* INTRO */
+  .intro{
+    position:absolute;
+    inset:0;
+    z-index:20;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:8vh 8vw;
+    opacity:var(--intro-opacity,1);
+    transform:translate3d(0,var(--intro-y,0),0);
+    pointer-events:none;
+  }
+  .intro-inner{width:min(980px,90vw)}
+  .eyebrow{
+    display:block;
+    margin-bottom:18px;
+    font-size:9px;
+    letter-spacing:.24em;
+    color:rgba(255,255,255,.32);
+  }
+  .intro h1{
+    margin:0;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:clamp(72px,11vw,160px);
+    line-height:.92;
+    font-weight:500;
+    letter-spacing:-.055em;
+  }
+  .intro p{
+    width:min(720px,82vw);
+    margin:30px auto 0;
+    font-size:14px;
+    line-height:1.8;
+    color:rgba(255,255,255,.56);
+    word-break:keep-all;
+  }
+  .intro .split{
+    display:flex;
+    justify-content:center;
+    gap:28px;
+    margin-top:30px;
+    font-size:9px;
+    letter-spacing:.16em;
+  }
+  .intro .split span:first-child{color:rgba(217,90,95,.78)}
+  .intro .split span:last-child{color:rgba(255,255,255,.45)}
+  .scroll-note{
+    margin-top:34px;
+    font-size:9px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.24);
+  }
+
+  /* MAIN TIMELINE */
+  .main{
+    position:absolute;
+    inset:0;
+    z-index:10;
+    opacity:var(--main-opacity);
+    pointer-events:none;
+  }
+  .timeline-wrap{
+    position:absolute;
+    left:6vw;
+    right:6vw;
+    top:50%;
+    transform:translateY(-50%);
+    height:min(64vh,650px);
+  }
+  .timeline-title{
+    position:absolute;
+    left:0;
+    top:-8px;
+    right:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    z-index:3;
+  }
+  .timeline-title .side{
+    max-width:260px;
+  }
+  .timeline-title .side.right{text-align:right}
+  .code{
+    display:block;
+    font-size:9px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.28);
+    margin-bottom:8px;
+  }
+  .timeline-title strong{
+    font-size:clamp(19px,1.8vw,27px);
+    font-weight:500;
+    letter-spacing:-.03em;
+  }
+  .timeline-title .reverse strong{color:rgba(217,90,95,.92)}
+  .timeline-title p{
+    margin:7px 0 0;
+    font-size:11px;
+    line-height:1.55;
+    color:rgba(255,255,255,.38);
+  }
+
+  #timeSvg{
+    position:absolute;
+    inset:56px 0 0;
+    width:100%;
+    height:calc(100% - 56px);
+    overflow:visible;
+  }
+  .base-path{
+    fill:none;
+    stroke:rgba(255,255,255,.10);
+    stroke-width:.28;
+    vector-effect:non-scaling-stroke;
+  }
+  .reverse-base{stroke:rgba(217,90,95,.13)}
+  .progress-path{
+    fill:none;
+    stroke-width:.78;
+    vector-effect:non-scaling-stroke;
+    stroke-linecap:round;
+    stroke-dasharray:1;
+    stroke-dashoffset:1;
+  }
+  #reverseProgress{stroke:rgba(217,90,95,.72)}
+  #forwardProgress{stroke:rgba(255,255,255,.62)}
+  .cross-guide{
+    stroke:rgba(255,255,255,.055);
+    stroke-width:.2;
+    stroke-dasharray:1.5 2.5;
+    vector-effect:non-scaling-stroke;
+  }
+  .present-ring{
+    fill:#000;
+    stroke:rgba(255,255,255,.30);
+    stroke-width:.22;
+    vector-effect:non-scaling-stroke;
+  }
+  .present-core{
+    fill:rgba(255,255,255,.90);
+    filter:drop-shadow(0 0 7px rgba(255,255,255,.35));
+  }
+  .static-node{
+    fill:#000;
+    stroke:rgba(255,255,255,.26);
+    stroke-width:.22;
+    vector-effect:non-scaling-stroke;
+  }
+  .static-node.red{stroke:rgba(217,90,95,.40)}
+  .active-dot{
+    stroke-width:.28;
+    vector-effect:non-scaling-stroke;
+  }
+  #reverseDot{
+    fill:rgba(217,90,95,.92);
+    stroke:rgba(255,255,255,.34);
+    filter:drop-shadow(0 0 6px rgba(217,90,95,.28));
+  }
+  #forwardDot{
+    fill:rgba(255,255,255,.82);
+    stroke:rgba(255,255,255,.42);
+    filter:drop-shadow(0 0 6px rgba(255,255,255,.20));
+  }
+
+  .present-label{
+    position:absolute;
+    left:86%;
+    top:49.5%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+    z-index:5;
+  }
+  .present-label span{
+    display:block;
+    font-size:9px;
+    letter-spacing:.16em;
+    color:rgba(255,255,255,.28);
+    margin-bottom:6px;
+  }
+  .present-label strong{
+    font-size:18px;
+    font-weight:500;
+  }
+
+  .event-card{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:min(270px,22vw);
+    min-height:116px;
+    z-index:4;
+  }
+  .event-card.reverse{
+    left:2.5vw;
+    top:29%;
+  }
+  .event-card.forward{
+    left:2.5vw;
+    top:76%;
+  }
+  .event-card .meta{
+    display:block;
+    margin-bottom:8px;
+    font-size:8px;
+    letter-spacing:.18em;
+    color:rgba(255,255,255,.28);
+  }
+  .event-card.reverse .meta{color:rgba(217,90,95,.62)}
+  .event-card h3{
+    margin:0;
+    font-size:clamp(15px,1.25vw,19px);
+    line-height:1.45;
+    font-weight:500;
+    letter-spacing:-.03em;
+    word-break:keep-all;
+  }
+  .event-card p{
+    margin:10px 0 0;
+    font-size:11px;
+    line-height:1.65;
+    color:rgba(255,255,255,.48);
+    word-break:keep-all;
+  }
+
+  .center-caption{
+    position:absolute;
+    left:50%;
+    bottom:-22px;
+    transform:translateX(-50%);
+    text-align:center;
+    width:min(720px,70vw);
+    font-size:11px;
+    line-height:1.7;
+    color:rgba(255,255,255,.34);
+  }
+
+  /* FINAL */
+  .final{
+    position:absolute;
+    inset:0;
+    z-index:40;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:8vh 8vw;
+    pointer-events:none;
+  }
+  .final-inner{
+    width:min(940px,90vw);
+    opacity:var(--final-opacity);
+    transform:translate3d(0,var(--final-y,20px),0);
+  }
+  .final small{
+    display:block;
+    margin-bottom:18px;
+    font-size:9px;
+    letter-spacing:.20em;
+    color:rgba(255,255,255,.28);
+  }
+  .final h2{
+    margin:0;
+    font-size:clamp(34px,4.6vw,68px);
+    line-height:1.35;
+    font-weight:500;
+    letter-spacing:-.045em;
+    word-break:keep-all;
+  }
+  .final p{
+    max-width:700px;
+    margin:22px auto 0;
+    font-size:13px;
+    line-height:1.75;
+    color:rgba(255,255,255,.48);
+    word-break:keep-all;
+  }
+
+  @media(max-width:900px){
+    .brand{left:18px;top:18px}
+    .rule{right:18px;top:18px}
+    .progress,.progress-dot{display:none}
+    .timeline-wrap{left:18px;right:18px;height:66vh}
+    .timeline-title p{display:none}
+    .event-card{width:31vw}
+    .event-card.reverse,.event-card.forward{left:3vw}
+    .center-caption{width:80vw}
+  }
+  @media(max-width:680px){
+    .intro h1{font-size:18vw}
+    .timeline-title strong{font-size:15px}
+    .event-card{width:38vw}
+    .event-card h3{font-size:11px}
+    .event-card p{font-size:9px}
+    .present-label strong{font-size:14px}
+    .center-caption{font-size:9px}
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll-space"></div>
+
+<div class="stage">
+  <div class="hud">
+    <div class="brand">MEMENTO / MEMORY ORDER STUDY</div>
+    <div class="rule">COLOR = REVERSE ORDER<br>BLACK &amp; WHITE = FORWARD ORDER<br>MEET = PRESENT</div>
+    <div class="progress"></div>
+    <div class="progress-dot"></div>
+  </div>
+
+  <section class="intro" id="intro">
+    <div class="intro-inner">
+      <span class="eyebrow">CHRISTOPHER NOLAN / TEMPORAL STRUCTURE</span>
+      <h1>Memento</h1>
+      <p>메멘토는 두 개의 시간 방향을 교차시켜 보여줍니다. 컬러 장면은 결과에서 원인으로 거슬러 올라가고, 흑백 장면은 원인에서 결과로 나아갑니다. 서로 반대 방향의 기억은 결국 하나의 현재에서 만납니다.</p>
+      <div class="split">
+        <span>COLOR · REVERSE</span>
+        <span>BLACK &amp; WHITE · FORWARD</span>
+      </div>
+      <div class="scroll-note">SCROLL TO REORDER MEMORY ↓</div>
+    </div>
+  </section>
+
+  <section class="main" id="main">
+    <div class="timeline-wrap">
+      <div class="timeline-title">
+        <div class="side reverse">
+          <span class="code">A / COLOR SEQUENCE</span>
+          <strong>결과 → 원인</strong>
+          <p>영화의 진행과 함께 시간은 뒤로 되감깁니다.</p>
+        </div>
+        <div class="side right">
+          <span class="code">B / BLACK &amp; WHITE</span>
+          <strong>원인 → 결과</strong>
+          <p>시간은 정상적인 방향으로 현재를 향합니다.</p>
+        </div>
+      </div>
+
+      <svg id="timeSvg" viewBox="0 0 100 64" preserveAspectRatio="none" aria-hidden="true">
+        <line class="cross-guide" x1="8" y1="32" x2="88" y2="32"/>
+        <line class="cross-guide" x1="86" y1="7" x2="86" y2="58"/>
+
+        <path id="reversePath" class="base-path reverse-base"
+          d="M7 19 C14 19 17 45 25 32 C33 18 37 47 45 32 C53 17 58 46 66 32 C73 20 78 43 86 32" />
+        <path id="forwardPath" class="base-path"
+          d="M7 45 C14 45 17 19 25 32 C33 46 37 17 45 32 C53 47 58 18 66 32 C73 44 78 21 86 32" />
+
+        <path id="reverseProgress" pathLength="1" class="progress-path"
+          d="M7 19 C14 19 17 45 25 32 C33 18 37 47 45 32 C53 17 58 46 66 32 C73 20 78 43 86 32" />
+        <path id="forwardProgress" pathLength="1" class="progress-path"
+          d="M7 45 C14 45 17 19 25 32 C33 46 37 17 45 32 C53 47 58 18 66 32 C73 44 78 21 86 32" />
+
+        <g id="reverseNodes"></g>
+        <g id="forwardNodes"></g>
+
+        <circle class="present-ring" cx="86" cy="32" r="3.2"/>
+        <circle class="present-ring" cx="86" cy="32" r="1.9"/>
+        <circle class="present-core" cx="86" cy="32" r=".75"/>
+
+        <circle id="reverseDot" class="active-dot" cx="7" cy="19" r=".72"/>
+        <circle id="forwardDot" class="active-dot" cx="7" cy="45" r=".72"/>
+      </svg>
+
+      <div class="present-label">
+        <span>CONVERGENCE</span>
+        <strong>현재</strong>
+      </div>
+
+      <div class="event-card reverse" id="reverseCard">
+        <span class="meta" id="reverseMeta">COLOR 06 · RESULT</span>
+        <h3 id="reverseTitle">결과를 먼저 보고 원인을 추적합니다.</h3>
+        <p id="reverseBody">새로운 컬러 장면이 시작될 때마다 직전 장면보다 더 이전의 시간이 드러납니다.</p>
+      </div>
+
+      <div class="event-card forward" id="forwardCard">
+        <span class="meta" id="forwardMeta">B&amp;W 01 · BEGIN</span>
+        <h3 id="forwardTitle">기억 장애와 사건의 출발점이 쌓입니다.</h3>
+        <p id="forwardBody">흑백 장면은 시간 순서대로 진행되며 컬러 장면이 향하는 현재에 점점 가까워집니다.</p>
+      </div>
+
+      <div class="center-caption">두 흐름은 같은 사건을 서로 반대 방향에서 해석하게 만들고, 교차가 반복될수록 원인과 결과의 경계가 흐려집니다.</div>
+    </div>
+  </section>
+
+  <section class="final" id="final">
+    <div class="final-inner">
+      <small>FINAL QUESTION / MEMORY &amp; ORDER</small>
+      <h2>시간의 순서가 뒤집힐 때,<br>기억을 얼마나 믿을 수 있었나요?</h2>
+      <p>결과에서 원인으로 향하는 시간과 원인에서 결과로 향하는 시간이 하나의 현재에서 만났습니다. 같은 사건도 어떤 순서로 보느냐에 따라 완전히 다른 기억처럼 느껴졌나요?</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root=document.documentElement;
+  const intro=document.getElementById('intro');
+  const main=document.getElementById('main');
+  const final=document.getElementById('final');
+
+  const reversePath=document.getElementById('reversePath');
+  const forwardPath=document.getElementById('forwardPath');
+  const reverseProgress=document.getElementById('reverseProgress');
+  const forwardProgress=document.getElementById('forwardProgress');
+  const reverseDot=document.getElementById('reverseDot');
+  const forwardDot=document.getElementById('forwardDot');
+  const reverseNodes=document.getElementById('reverseNodes');
+  const forwardNodes=document.getElementById('forwardNodes');
+
+  const reverseMeta=document.getElementById('reverseMeta');
+  const reverseTitle=document.getElementById('reverseTitle');
+  const reverseBody=document.getElementById('reverseBody');
+  const forwardMeta=document.getElementById('forwardMeta');
+  const forwardTitle=document.getElementById('forwardTitle');
+  const forwardBody=document.getElementById('forwardBody');
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+  const smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
+
+  const reverseEvents=[
+    ["COLOR 06 · RESULT","결과를 먼저 보고 원인을 추적합니다.","컬러 장면은 결과를 먼저 제시하고, 다음 장면에서 그보다 이전의 원인을 보여줍니다."],
+    ["COLOR 05 · NATALIE","관계의 의미가 장면마다 다시 바뀝니다.","레너드가 믿었던 감정과 정보는 더 이전의 장면을 볼수록 다른 의미로 재해석됩니다."],
+    ["COLOR 04 · DODD","행동의 이유가 나중에 드러납니다.","먼저 행동을 목격하고 나중에 이유를 알게 되면서 관객도 레너드처럼 불완전한 정보에 의존합니다."],
+    ["COLOR 03 · TEDDY","신뢰와 의심의 순서가 뒤집힙니다.","누가 진실을 말하는지 판단하기 전에 결과를 먼저 경험하도록 구성됩니다."],
+    ["COLOR 02 · JIMMY","현재에 가까워질수록 원인이 선명해집니다.","서로 분리되어 보였던 사건들이 하나의 장소와 선택을 향해 연결됩니다."],
+    ["COLOR 01 · CAUSE","마지막에 도착한 원인이 다시 전체를 바꿉니다.","시간을 거슬러 도착한 시작점은 앞서 본 모든 결과를 다시 해석하게 만듭니다."]
+  ];
+
+  const forwardEvents=[
+    ["B&W 01 · BEGIN","기억 장애와 사건의 출발점이 쌓입니다.","흑백 장면은 정상적인 시간 순서를 따라 진행되며 상황과 규칙을 차례로 설명합니다."],
+    ["B&W 02 · SAMMY","과거의 기억이 현재 판단의 기준이 됩니다.","새미 젠키스의 이야기는 레너드가 자신의 기억을 어떻게 이해하는지 보여주는 단서가 됩니다."],
+    ["B&W 03 · CALL","전화 통화가 정보의 흐름을 이어갑니다.","단편적인 사실들이 순차적으로 축적되면서 컬러 장면과 다른 종류의 확신을 만듭니다."],
+    ["B&W 04 · PLAN","행동은 점점 구체적인 목적을 향합니다.","앞으로 흐르는 시간은 아직 보지 못한 컬러 시간축의 시작점에 접근합니다."],
+    ["B&W 05 · ARRIVAL","두 시간축의 공간이 겹치기 시작합니다.","흑백의 현재가 컬러의 가장 오래된 장면과 가까워지며 두 구조의 경계가 사라집니다."],
+    ["B&W 06 · PRESENT","흑백은 컬러로 전환되며 하나의 현재가 됩니다.","서로 반대 방향으로 흐르던 두 이야기의 시간이 같은 사건에서 결합됩니다."]
+  ];
+
+  function buildNodes(path,group,isRed){
+    const total=path.getTotalLength();
+    const ns="http://www.w3.org/2000/svg";
+    for(let i=0;i<6;i++){
+      const p=(i+1)/7;
+      const pt=path.getPointAtLength(total*p);
+      const c=document.createElementNS(ns,"circle");
+      c.setAttribute("cx",pt.x.toFixed(3));
+      c.setAttribute("cy",pt.y.toFixed(3));
+      c.setAttribute("r",".48");
+      c.setAttribute("class","static-node"+(isRed?" red":""));
+      group.appendChild(c);
+    }
+  }
+
+  buildNodes(reversePath,reverseNodes,true);
+  buildNodes(forwardPath,forwardNodes,false);
+
+  let raf=0;
+  function moveDot(path,dot,p){
+    const total=path.getTotalLength();
+    const pt=path.getPointAtLength(total*clamp(p,0,1));
+    dot.setAttribute("cx",pt.x.toFixed(3));
+    dot.setAttribute("cy",pt.y.toFixed(3));
+  }
+
+  function updateCards(p){
+    const index=Math.min(5,Math.floor(clamp(p,0,.9999)*6));
+
+    const r=reverseEvents[index];
+    reverseMeta.textContent=r[0];
+    reverseTitle.textContent=r[1];
+    reverseBody.textContent=r[2];
+
+    const f=forwardEvents[index];
+    forwardMeta.textContent=f[0];
+    forwardTitle.textContent=f[1];
+    forwardBody.textContent=f[2];
+  }
+
+  function render(){
+    raf=0;
+    const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
+    const raw=clamp(scrollY/max,0,1);
+    root.style.setProperty("--raw",raw.toFixed(5));
+
+    const introOut=smoother(clamp((raw-.025)/.10,0,1));
+    const mainIn=smoother(clamp((raw-.055)/.08,0,1));
+    const mainOut=smoother(clamp((raw-.865)/.075,0,1));
+    const finalIn=smoother(clamp((raw-.905)/.07,0,1));
+
+    root.style.setProperty("--intro-opacity",(1-introOut).toFixed(4));
+    root.style.setProperty("--intro-y",(-introOut*50).toFixed(2)+"px");
+    root.style.setProperty("--main-opacity",(mainIn*(1-mainOut*.95)).toFixed(4));
+    root.style.setProperty("--hud-opacity",(1-mainOut*.88).toFixed(4));
+    root.style.setProperty("--final-opacity",finalIn.toFixed(4));
+    root.style.setProperty("--final-y",((1-finalIn)*22).toFixed(2)+"px");
+
+    const p=clamp((raw-.10)/.78,0,1);
+
+    moveDot(reversePath,reverseDot,p);
+    moveDot(forwardPath,forwardDot,p);
+
+    reverseProgress.style.strokeDashoffset=(1-p).toFixed(4);
+    forwardProgress.style.strokeDashoffset=(1-p).toFixed(4);
+
+    updateCards(p);
+  }
+
+  function requestRender(){
+    if(!raf) raf=requestAnimationFrame(render);
+  }
+
+  addEventListener("scroll",requestRender,{passive:true});
+  addEventListener("resize",requestRender);
+  requestRender();
+})();
+</script>
+</body>
+</html>
