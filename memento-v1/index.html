@@ -29,7 +29,7 @@
   }
 
   .scroll-space{
-    height:2280vh;
+    height:11400vh;
     background:#000;
   }
 
@@ -646,8 +646,8 @@
     afterB.textContent=earlier ? earlier.title : "";
     afterC.textContent=index>6 ? scenes[2].title : "";
 
-    const ghostIn=smoother(clamp((local-.08)/.30,0,1));
-    const ghostOut=1-smoother(clamp((local-.76)/.24,0,1));
+    const ghostIn=smoother(clamp((local-.03)/.22,0,1));
+    const ghostOut=1-smoother(clamp((local-.88)/.12,0,1));
     const g=ghostIn*ghostOut;
 
     afterA.style.opacity=(g*.64).toFixed(3);
@@ -697,32 +697,53 @@
       a memory takes a long time to arrive, hangs in the dark, then leaves
       on a curved trajectory instead of popping in and out.
     */
-    const enter=smoother(clamp(local/.38,0,1));
-    const exit=smoother(clamp((local-.72)/.28,0,1));
+    /*
+      Five-times-slower scene rhythm:
+      the memory enters gradually, remains exposed for most of the segment,
+      and only starts leaving near the very end.
+    */
+    const enter=smoother(clamp(local/.46,0,1));
+    const exit=smoother(clamp((local-.84)/.16,0,1));
 
-    // Long overlap: it becomes visible early and stays visible until late.
-    const fadeIn=smoother(clamp(local/.30,0,1));
-    const fadeOut=1-smoother(clamp((local-.74)/.26,0,1));
+    // Much longer exposure window.
+    const fadeIn=smoother(clamp(local/.18,0,1));
+    const fadeOut=1-smoother(clamp((local-.89)/.11,0,1));
     const visibility=fadeIn*fadeOut;
 
-    // Readable at all times; the blur difference is perceptible, not obstructive.
-    const clarity=.76 + scene.clarity*.16 + Math.sin(local*Math.PI)*.045;
+    // Readable at all times; blur stays subtle.
+    const clarity=.78 + scene.clarity*.15 + Math.sin(local*Math.PI)*.035;
 
-    // Curved approach: perpendicular arc makes the paragraph feel like an orbit.
+    /*
+      Giant orbital arc:
+      previous curvature radius was ~8.5.
+      It is now ~85, so each paragraph moves along a huge ellipse
+      whose center sits far outside the visible viewport.
+    */
     const startX=scene.enter.x;
     const startY=scene.enter.y;
     const len=Math.max(Math.hypot(startX,startY),1);
-    const perpX=(-startY/len)*8.5;
-    const perpY=( startX/len)*8.5;
+
+    const orbitRadiusX=85;
+    const orbitRadiusY=68;
+
+    const normX=-startY/len;
+    const normY= startX/len;
+
     const arc=Math.sin(enter*Math.PI);
+    const orbitX=normX*orbitRadiusX*arc;
+    const orbitY=normY*orbitRadiusY*arc;
 
-    // Departure continues the orbital direction very slowly.
-    const flyX=(1-enter)*startX + arc*perpX + exit*(perpX*.85-startX*.10);
-    const flyY=(1-enter)*startY + arc*perpY + exit*(perpY*.85+8);
+    // A second broad bend keeps the exit from retracing the exact same path.
+    const exitArc=Math.sin(exit*Math.PI*.82);
+    const exitX=normX*orbitRadiusX*.42*exitArc;
+    const exitY=normY*orbitRadiusY*.42*exitArc;
 
-    const glowBreath=.72+.28*Math.sin((local*.82+.08)*Math.PI);
+    const flyX=(1-enter)*startX + orbitX + exitX - exit*startX*.12;
+    const flyY=(1-enter)*startY + orbitY + exitY + exit*14;
+
+    const glowBreath=.72+.28*Math.sin((local*.58+.08)*Math.PI);
     const glowOpacity=visibility*(.18+.18*glowBreath);
-    const glowScale=1 + Math.sin(local*Math.PI)*.055;
+    const glowScale=1 + Math.sin(local*Math.PI)*.070;
 
     memoryCard.style.setProperty("--card-x",scene.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--card-y",scene.y.toFixed(2)+"vh");
@@ -743,10 +764,10 @@
       Narrator clarity intentionally disagrees with memory clarity.
       Sometimes the page sounds confident when the memory is blurry.
     */
-    const narratorPulse=.52+.48*Math.abs(Math.sin((local*.72+index*.11)*Math.PI));
-    narrator.style.setProperty("--narrator-opacity",(visibility*(.62+narratorPulse*.30)).toFixed(4));
-    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.75).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-enter)*14 + exit*5 + (1-narratorPulse)*3).toFixed(2)+"px");
+    const narratorPulse=.60+.40*Math.abs(Math.sin((local*.46+index*.09)*Math.PI));
+    narrator.style.setProperty("--narrator-opacity",(visibility*(.68+narratorPulse*.26)).toFixed(4));
+    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.58).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-enter)*10 + exit*4 + (1-narratorPulse)*2).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
     memoryGhosts(index,local);
