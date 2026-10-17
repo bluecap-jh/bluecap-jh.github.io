@@ -178,99 +178,22 @@
     pointer-events:none;
   }
 
-  #memorySvg{
-    position:absolute;
-    inset:8vh 5vw 8vh;
-    width:90vw;
-    height:84vh;
-    overflow:visible;
-  }
-
-  .memory-path{
-    fill:none;
-    vector-effect:non-scaling-stroke;
-    stroke-linecap:round;
-    stroke-width:.72;
-  }
-  #reversePath{
-    stroke:rgba(255,255,255,.24);
-    stroke-dasharray:3 3;
-  }
-  #forwardPath{
-    stroke:rgba(255,255,255,.34);
-  }
-  .ghost-path{
-    fill:none;
-    stroke:rgba(255,255,255,.055);
-    stroke-width:.35;
-    vector-effect:non-scaling-stroke;
-  }
-  .node{
-    fill:#000;
-    stroke:rgba(255,255,255,.28);
-    stroke-width:.24;
-    vector-effect:non-scaling-stroke;
-  }
-  .node.active{
-    fill:rgba(255,255,255,.82);
-    stroke:rgba(255,255,255,.72);
-    filter:drop-shadow(0 0 6px rgba(255,255,255,.28));
-  }
-  .node.dim{opacity:.38}
-  .present-ring{
-    fill:#000;
-    stroke:rgba(255,255,255,.26);
-    stroke-width:.22;
-    vector-effect:non-scaling-stroke;
-  }
-  .present-core{
-    fill:rgba(255,255,255,.9);
-    filter:drop-shadow(0 0 8px rgba(255,255,255,.30));
-  }
-
-  .track-label{
-    position:absolute;
-    z-index:24;
-    font-size:9px;
-    letter-spacing:.16em;
-    color:rgba(255,255,255,.28);
-  }
-  .track-label strong{
-    display:block;
-    margin-top:6px;
-    font-size:17px;
-    letter-spacing:-.02em;
-    font-weight:500;
-    color:rgba(255,255,255,.62);
-  }
-  .track-label.forward{
-    left:7.5vw;
-    top:20vh;
-  }
-  .track-label.reverse{
-    left:7.5vw;
-    bottom:18vh;
-  }
-  .track-label.present{
-    right:7vw;
-    top:47%;
-    text-align:right;
-  }
-
   /* MEMORY CARD */
   .memory-card{
     --card-x:50vw;
     --card-y:50vh;
     --card-opacity:0;
-    --card-blur:8px;
-    --card-scale:.985;
+    --card-blur:1.8px;
+    --card-scale:.992;
+    --fly-x:0px;
+    --fly-y:0px;
     position:absolute;
     z-index:35;
     left:var(--card-x);
     top:var(--card-y);
-    width:min(520px,42vw);
+    width:min(560px,44vw);
     transform:
-      translate(-50%,-50%)
+      translate(calc(-50% + var(--fly-x)),calc(-50% + var(--fly-y)))
       scale(var(--card-scale));
     opacity:var(--card-opacity);
     filter:blur(var(--card-blur));
@@ -307,7 +230,7 @@
     max-width:480px;
     font-size:13px;
     line-height:1.75;
-    color:rgba(255,255,255,.48);
+    color:rgba(255,255,255,.62);
     word-break:keep-all;
   }
   .memory-card .fact{
@@ -317,7 +240,7 @@
     font-size:9px;
     line-height:1.65;
     letter-spacing:.10em;
-    color:rgba(255,255,255,.26);
+    color:rgba(255,255,255,.34);
   }
 
   /* narrator intentionally unreliable */
@@ -355,8 +278,8 @@
     max-width:320px;
     font-size:11px;
     line-height:1.65;
-    color:rgba(255,255,255,.11);
-    filter:blur(1.2px);
+    color:rgba(255,255,255,.20);
+    filter:blur(.55px);
     opacity:0;
     transition:none;
     word-break:keep-all;
@@ -461,48 +384,13 @@
     <div class="intro-inner">
       <span class="eyebrow">CHRISTOPHER NOLAN / MEMORY STRUCTURE STUDY</span>
       <h1>Memento</h1>
-      <p>이 페이지에서 스크롤은 시간이고, 지금 화면에 남아 있는 정보는 기억입니다. 어떤 기억은 너무 오래 머물고, 어떤 기억은 제대로 읽기도 전에 사라집니다. 방금 본 문장이 다시 나타나더라도 같은 내용이라고 확신하지 마세요.</p>
+      <p>이 페이지에서 스크롤은 시간이고, 지금 화면에 남아 있는 정보는 기억입니다. 어떤 기억은 화면 한쪽에서 갑자기 들어오고, 어떤 기억은 오래 머물다가 흐려집니다. 방금 본 문장이 다른 위치에서 다시 나타나더라도 같은 기억이라고 확신하지 마세요.</p>
       <div class="statement">THE PAGE REMEMBERS DIFFERENTLY THAN YOU DO.</div>
       <div class="scroll-note">SCROLL TO LOSE THE ORDER ↓</div>
     </div>
   </section>
 
   <section class="world" id="world">
-    <svg id="memorySvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-
-      <path class="ghost-path"
-        d="M8 24 C17 19 22 38 30 31 C38 24 42 48 50 39 C58 31 62 51 70 43 C77 36 83 50 91 50"/>
-      <path class="ghost-path"
-        d="M8 76 C17 81 22 62 30 69 C38 76 42 52 50 61 C58 69 62 49 70 57 C77 64 83 50 91 50"/>
-
-      <path id="forwardPath" class="memory-path"
-        d="M8 24 C17 19 22 38 30 31 C38 24 42 48 50 39 C58 31 62 51 70 43 C77 36 83 50 91 50"/>
-      <path id="reversePath" class="memory-path"
-        d="M8 76 C17 81 22 62 30 69 C38 76 42 52 50 61 C58 69 62 49 70 57 C77 64 83 50 91 50"/>
-
-      <g id="forwardNodes"></g>
-      <g id="reverseNodes"></g>
-
-      <circle class="present-ring" cx="91" cy="50" r="3.4"/>
-      <circle class="present-ring" cx="91" cy="50" r="2.0"/>
-      <circle class="present-core" cx="91" cy="50" r=".72"/>
-    </svg>
-
-    <div class="track-label forward">
-      <span>FORWARD MEMORY</span>
-      <strong>흑백 / 원인 → 결과</strong>
-    </div>
-
-    <div class="track-label reverse">
-      <span>REVERSE MEMORY</span>
-      <strong>컬러 / 결과 → 원인</strong>
-    </div>
-
-    <div class="track-label present">
-      <span>THE TWO ORDERS COLLAPSE</span>
-      <strong>현재</strong>
-    </div>
-
     <div class="memory-card" id="memoryCard">
       <div class="scene" id="sceneLabel">FILM 01</div>
       <h2 id="memoryTitle">사진이 흔들립니다.</h2>
@@ -549,11 +437,6 @@
 
   const narrator=document.getElementById("narrator");
   const narratorText=document.getElementById("narratorText");
-
-  const forwardPath=document.getElementById("forwardPath");
-  const reversePath=document.getElementById("reversePath");
-  const forwardNodes=document.getElementById("forwardNodes");
-  const reverseNodes=document.getElementById("reverseNodes");
 
   const afterA=document.getElementById("afterA");
   const afterB=document.getElementById("afterB");
@@ -684,6 +567,27 @@
     }
   ];
 
+  /*
+    Each memory arrives from a different direction. These are deterministic,
+    not random at runtime, so the composition is chaotic without jittering.
+  */
+  const entrances=[
+    {x:-34,y:0},
+    {x:30,y:0},
+    {x:0,y:30},
+    {x:-28,y:13},
+    {x:34,y:-7},
+    {x:0,y:34},
+    {x:-32,y:-9},
+    {x:29,y:12},
+    {x:0,y:29},
+    {x:-30,y:5},
+    {x:35,y:-5},
+    {x:0,y:32},
+    {x:-18,y:18}
+  ];
+  scenes.forEach((scene,i)=>scene.enter=entrances[i%entrances.length]);
+
   // Deliberately uneven scene spans.
   const totalWeight=scenes.reduce((s,x)=>s+x.weight,0);
   let acc=0;
@@ -694,24 +598,6 @@
     scene.mid=(scene.start+scene.end)/2;
   });
 
-  function buildNodes(path,group,type){
-    const ns="http://www.w3.org/2000/svg";
-    const total=path.getTotalLength();
-    for(let i=0;i<7;i++){
-      const p=(i+1)/8;
-      const pt=path.getPointAtLength(total*p);
-      const c=document.createElementNS(ns,"circle");
-      c.setAttribute("cx",pt.x.toFixed(3));
-      c.setAttribute("cy",pt.y.toFixed(3));
-      c.setAttribute("r",".50");
-      c.setAttribute("class","node "+type);
-      group.appendChild(c);
-    }
-  }
-
-  buildNodes(forwardPath,forwardNodes,"forward");
-  buildNodes(reversePath,reverseNodes,"reverse");
-
   function sceneAt(p){
     for(let i=0;i<scenes.length;i++){
       if(p<=scenes[i].end || i===scenes.length-1){
@@ -719,25 +605,6 @@
       }
     }
     return {scene:scenes[scenes.length-1],index:scenes.length-1};
-  }
-
-  function setNodeState(index,type){
-    [...document.querySelectorAll(".node")].forEach(n=>{
-      n.classList.remove("active");
-      n.classList.add("dim");
-    });
-
-    const group=type==="forward" ? forwardNodes :
-                type==="reverse" ? reverseNodes : null;
-
-    if(group){
-      const nodes=[...group.children];
-      const idx=Math.min(nodes.length-1,Math.floor(index/2));
-      if(nodes[idx]){
-        nodes[idx].classList.remove("dim");
-        nodes[idx].classList.add("active");
-      }
-    }
   }
 
   function memoryGhosts(index,local){
@@ -752,9 +619,9 @@
     const ghostOut=1-smooth(clamp((local-.70)/.22,0,1));
     const g=ghostIn*ghostOut;
 
-    afterA.style.opacity=(g*.52).toFixed(3);
-    afterB.style.opacity=(g*.34).toFixed(3);
-    afterC.style.opacity=(index>7 ? g*.28 : 0).toFixed(3);
+    afterA.style.opacity=(g*.64).toFixed(3);
+    afterB.style.opacity=(g*.48).toFixed(3);
+    afterC.style.opacity=(index>7 ? g*.40 : 0).toFixed(3);
 
     fragments.forEach((el,i)=>{
       const phase=(index*.17+i*.23)%1;
@@ -790,16 +657,28 @@
       it arrives slowly, becomes readable, then dissolves before the next memory.
       Low-clarity scenes never become fully sharp.
     */
-    const enter=smoother(clamp(local/.24,0,1));
-    const leave=1-smoother(clamp((local-.70)/.30,0,1));
+    /*
+      Memories fly in from inconsistent directions with ease-in-out motion.
+      They remain readable: blur is capped so "fuzzy" never means invisible.
+    */
+    const enter=smoother(clamp(local/.28,0,1));
+    const leave=1-smoother(clamp((local-.78)/.22,0,1));
     const visibility=enter*leave;
-    const clarity=scene.clarity*(.64+.36*Math.sin(local*Math.PI));
+
+    // Keep even the weakest memory readable.
+    const clarity=.68 + scene.clarity*.24 + Math.sin(local*Math.PI)*.06;
+
+    const exitDrift=smoother(clamp((local-.78)/.22,0,1));
+    const flyX=(1-enter)*scene.enter.x - exitDrift*scene.enter.x*.18;
+    const flyY=(1-enter)*scene.enter.y + exitDrift*10;
 
     memoryCard.style.setProperty("--card-x",scene.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--card-y",scene.y.toFixed(2)+"vh");
-    memoryCard.style.setProperty("--card-opacity",(visibility*(.55+.45*clarity)).toFixed(4));
-    memoryCard.style.setProperty("--card-blur",((1-clarity)*7.5 + (1-visibility)*3.5).toFixed(2)+"px");
-    memoryCard.style.setProperty("--card-scale",(.985+visibility*.015).toFixed(4));
+    memoryCard.style.setProperty("--fly-x",flyX.toFixed(2)+"vw");
+    memoryCard.style.setProperty("--fly-y",flyY.toFixed(2)+"vh");
+    memoryCard.style.setProperty("--card-opacity",(visibility*(.82+.18*clarity)).toFixed(4));
+    memoryCard.style.setProperty("--card-blur",((1-clarity)*3.0 + (1-visibility)*.8).toFixed(2)+"px");
+    memoryCard.style.setProperty("--card-scale",(.992+enter*.008).toFixed(4));
 
     sceneLabel.textContent=scene.label;
     memoryTitle.textContent=scene.title;
@@ -811,21 +690,12 @@
       Sometimes the page sounds confident when the memory is blurry.
     */
     const narratorPulse=.34+.66*Math.abs(Math.sin((local+index*.13)*Math.PI));
-    narrator.style.setProperty("--narrator-opacity",(visibility*narratorPulse*.90).toFixed(4));
-    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*2.4).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-narratorPulse)*10).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-opacity",(visibility*(.58+narratorPulse*.38)).toFixed(4));
+    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*1.1).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-enter)*18 + (1-narratorPulse)*4).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
-    setNodeState(index,scene.type);
     memoryGhosts(index,local);
-
-    /*
-      The two timelines themselves remember differently.
-      They shift slightly with scroll so the diagram never feels fully stable.
-    */
-    const shift=Math.sin(p*Math.PI*8)*.65;
-    forwardPath.style.transform="translateY("+shift.toFixed(2)+"px)";
-    reversePath.style.transform="translateY("+(-shift*.8).toFixed(2)+"px)";
   }
 
   let raf=0;
