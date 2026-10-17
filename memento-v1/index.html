@@ -703,46 +703,51 @@
       per unit of scroll. It approaches from far outside the viewport and
       slides into place like it is moving across ice.
     */
-    const enterT=clamp(local/.72,0,1);
-    const exitT=clamp((local-.88)/.12,0,1);
-
-    // Long inertial glide: quick initial release, then very long deceleration.
-    const glide=1-Math.pow(1-enterT,3.6);
-    const exit=smoother(exitT);
-
-    // Visible for most of the scene.
-    const fadeIn=smoother(clamp(local/.16,0,1));
-    const fadeOut=1-smoother(clamp((local-.91)/.09,0,1));
-    const visibility=fadeIn*fadeOut;
-
-    // Keep blur subtle and readable.
-    const clarity=.80 + scene.clarity*.14 + Math.sin(local*Math.PI)*.025;
-
     /*
-      Far-distance approach:
-      the starting point is pushed well beyond the viewport.
-      Curvature is intentionally tiny on-screen, so the motion reads as
-      a distant arc flattening into a smooth glide.
+      Planet-like memory motion:
+      appearance, movement and disappearance all use the full scene duration.
+      Nothing snaps in or out; the paragraph slowly approaches, passes,
+      and recedes like a body moving through a long orbit.
     */
+    const orbitT=smoother(clamp(local,0,1));
+
+    // One continuous exposure curve across the whole scene.
+    // The low exponent keeps the memory readable for a long time.
+    const exposure=Math.pow(Math.max(Math.sin(local*Math.PI),0),.42);
+    const visibility=exposure;
+
+    // Blur changes very gently with distance.
+    const clarity=.80 + scene.clarity*.14 + exposure*.035;
+
     const baseX=scene.enter.x;
     const baseY=scene.enter.y;
     const len=Math.max(Math.hypot(baseX,baseY),1);
 
-    const distantX=baseX*2.4;
-    const distantY=baseY*2.2;
+    const dirX=baseX/len;
+    const dirY=baseY/len;
+    const normX=-dirY;
+    const normY= dirX;
 
-    const normX=-baseY/len;
-    const normY= baseX/len;
+    /*
+      The orbit is huge, but only a shallow section is visible on screen.
+      Start far away, glide past the anchor, then continue outward.
+    */
+    const startDistance=2.15;
+    const endDistance=-.72;
+    const radial=lerp(startDistance,endDistance,orbitT);
 
-    // Very broad radius, but only a small visible bend.
-    const broadBend=Math.sin(glide*Math.PI)*6.5;
-    const curveX=normX*broadBend;
-    const curveY=normY*broadBend*.72;
+    const distantX=baseX*radial;
+    const distantY=baseY*radial;
 
-    const flyX=(1-glide)*distantX + curveX + exit*(normX*4.5);
-    const flyY=(1-glide)*distantY + curveY + exit*(8 + normY*3.2);
+    // Large-radius orbit perceived as a slow, shallow bend.
+    const arc=Math.sin(orbitT*Math.PI);
+    const curveX=normX*7.0*arc;
+    const curveY=normY*5.2*arc;
 
-    const glowBreath=.76+.24*Math.sin((local*.48+.08)*Math.PI);
+    const flyX=distantX+curveX;
+    const flyY=distantY+curveY;
+
+    const glowBreath=.74+.26*Math.sin((local*.40+.10)*Math.PI);
     const glowOpacity=visibility*(.18+.18*glowBreath);
     const glowScale=1 + Math.sin(local*Math.PI)*.070;
 
@@ -752,7 +757,7 @@
     memoryCard.style.setProperty("--fly-y",flyY.toFixed(2)+"vh");
     memoryCard.style.setProperty("--card-opacity",(visibility*(.88+.12*clarity)).toFixed(4));
     memoryCard.style.setProperty("--card-blur",((1-clarity)*2.15 + (1-visibility)*.45).toFixed(2)+"px");
-    memoryCard.style.setProperty("--card-scale",(.996 + Math.sin(local*Math.PI)*.003).toFixed(4));
+    memoryCard.style.setProperty("--card-scale",(.996 + exposure*.003).toFixed(4));
     memoryCard.style.setProperty("--glow-opacity",glowOpacity.toFixed(4));
     memoryCard.style.setProperty("--glow-scale",glowScale.toFixed(4));
 
@@ -765,10 +770,10 @@
       Narrator clarity intentionally disagrees with memory clarity.
       Sometimes the page sounds confident when the memory is blurry.
     */
-    const narratorPulse=.66+.34*Math.abs(Math.sin((local*.38+index*.08)*Math.PI));
-    narrator.style.setProperty("--narrator-opacity",(visibility*(.70+narratorPulse*.24)).toFixed(4));
-    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.50).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-glide)*8 + exit*3 + (1-narratorPulse)*1.5).toFixed(2)+"px");
+    const narratorPulse=.70+.30*Math.abs(Math.sin((local*.30+index*.07)*Math.PI));
+    narrator.style.setProperty("--narrator-opacity",(visibility*(.72+narratorPulse*.22)).toFixed(4));
+    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.42).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-orbitT)*6 + orbitT*2 + (1-narratorPulse)*1.2).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
     memoryGhosts(index,local);
