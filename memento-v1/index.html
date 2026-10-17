@@ -29,7 +29,7 @@
   }
 
   .scroll-space{
-    height:1680vh;
+    height:2280vh;
     background:#000;
   }
 
@@ -187,6 +187,8 @@
     --card-scale:.992;
     --fly-x:0px;
     --fly-y:0px;
+    --glow-opacity:.18;
+    --glow-scale:1;
     position:absolute;
     z-index:35;
     left:var(--card-x);
@@ -199,6 +201,31 @@
     filter:blur(var(--card-blur));
     will-change:transform,opacity,filter,left,top;
     text-align:left;
+    isolation:isolate;
+  }
+
+  .memory-card::before{
+    content:"";
+    position:absolute;
+    z-index:-1;
+    left:-12%;
+    right:-12%;
+    top:-34%;
+    bottom:-34%;
+    background:
+      radial-gradient(
+        ellipse at 48% 50%,
+        rgba(255,255,255,.095) 0%,
+        rgba(255,255,255,.052) 24%,
+        rgba(255,255,255,.018) 50%,
+        transparent 74%
+      );
+    filter:blur(20px);
+    opacity:var(--glow-opacity);
+    transform:scale(var(--glow-scale));
+    transform-origin:center;
+    will-change:opacity,transform;
+    pointer-events:none;
   }
 
   .memory-card .scene{
@@ -224,14 +251,18 @@
     letter-spacing:-.045em;
     font-weight:500;
     word-break:keep-all;
+    text-shadow:
+      0 0 14px rgba(255,255,255,.08),
+      0 0 32px rgba(255,255,255,.035);
   }
   .memory-card p{
     margin:18px 0 0;
     max-width:480px;
     font-size:13px;
     line-height:1.75;
-    color:rgba(255,255,255,.62);
+    color:rgba(255,255,255,.66);
     word-break:keep-all;
+    text-shadow:0 0 18px rgba(255,255,255,.035);
   }
   .memory-card .fact{
     margin-top:18px;
@@ -615,8 +646,8 @@
     afterB.textContent=earlier ? earlier.title : "";
     afterC.textContent=index>6 ? scenes[2].title : "";
 
-    const ghostIn=smooth(clamp((local-.20)/.22,0,1));
-    const ghostOut=1-smooth(clamp((local-.70)/.22,0,1));
+    const ghostIn=smoother(clamp((local-.08)/.30,0,1));
+    const ghostOut=1-smoother(clamp((local-.76)/.24,0,1));
     const g=ghostIn*ghostOut;
 
     afterA.style.opacity=(g*.64).toFixed(3);
@@ -661,24 +692,47 @@
       Memories fly in from inconsistent directions with ease-in-out motion.
       They remain readable: blur is capped so "fuzzy" never means invisible.
     */
-    const enter=smoother(clamp(local/.28,0,1));
-    const leave=1-smoother(clamp((local-.78)/.22,0,1));
-    const visibility=enter*leave;
+    /*
+      Orbital memory motion:
+      a memory takes a long time to arrive, hangs in the dark, then leaves
+      on a curved trajectory instead of popping in and out.
+    */
+    const enter=smoother(clamp(local/.38,0,1));
+    const exit=smoother(clamp((local-.72)/.28,0,1));
 
-    // Keep even the weakest memory readable.
-    const clarity=.68 + scene.clarity*.24 + Math.sin(local*Math.PI)*.06;
+    // Long overlap: it becomes visible early and stays visible until late.
+    const fadeIn=smoother(clamp(local/.30,0,1));
+    const fadeOut=1-smoother(clamp((local-.74)/.26,0,1));
+    const visibility=fadeIn*fadeOut;
 
-    const exitDrift=smoother(clamp((local-.78)/.22,0,1));
-    const flyX=(1-enter)*scene.enter.x - exitDrift*scene.enter.x*.18;
-    const flyY=(1-enter)*scene.enter.y + exitDrift*10;
+    // Readable at all times; the blur difference is perceptible, not obstructive.
+    const clarity=.76 + scene.clarity*.16 + Math.sin(local*Math.PI)*.045;
+
+    // Curved approach: perpendicular arc makes the paragraph feel like an orbit.
+    const startX=scene.enter.x;
+    const startY=scene.enter.y;
+    const len=Math.max(Math.hypot(startX,startY),1);
+    const perpX=(-startY/len)*8.5;
+    const perpY=( startX/len)*8.5;
+    const arc=Math.sin(enter*Math.PI);
+
+    // Departure continues the orbital direction very slowly.
+    const flyX=(1-enter)*startX + arc*perpX + exit*(perpX*.85-startX*.10);
+    const flyY=(1-enter)*startY + arc*perpY + exit*(perpY*.85+8);
+
+    const glowBreath=.72+.28*Math.sin((local*.82+.08)*Math.PI);
+    const glowOpacity=visibility*(.18+.18*glowBreath);
+    const glowScale=1 + Math.sin(local*Math.PI)*.055;
 
     memoryCard.style.setProperty("--card-x",scene.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--card-y",scene.y.toFixed(2)+"vh");
     memoryCard.style.setProperty("--fly-x",flyX.toFixed(2)+"vw");
     memoryCard.style.setProperty("--fly-y",flyY.toFixed(2)+"vh");
-    memoryCard.style.setProperty("--card-opacity",(visibility*(.82+.18*clarity)).toFixed(4));
-    memoryCard.style.setProperty("--card-blur",((1-clarity)*3.0 + (1-visibility)*.8).toFixed(2)+"px");
-    memoryCard.style.setProperty("--card-scale",(.992+enter*.008).toFixed(4));
+    memoryCard.style.setProperty("--card-opacity",(visibility*(.88+.12*clarity)).toFixed(4));
+    memoryCard.style.setProperty("--card-blur",((1-clarity)*2.15 + (1-visibility)*.45).toFixed(2)+"px");
+    memoryCard.style.setProperty("--card-scale",(.994 + Math.sin(local*Math.PI)*.006).toFixed(4));
+    memoryCard.style.setProperty("--glow-opacity",glowOpacity.toFixed(4));
+    memoryCard.style.setProperty("--glow-scale",glowScale.toFixed(4));
 
     sceneLabel.textContent=scene.label;
     memoryTitle.textContent=scene.title;
@@ -689,10 +743,10 @@
       Narrator clarity intentionally disagrees with memory clarity.
       Sometimes the page sounds confident when the memory is blurry.
     */
-    const narratorPulse=.34+.66*Math.abs(Math.sin((local+index*.13)*Math.PI));
-    narrator.style.setProperty("--narrator-opacity",(visibility*(.58+narratorPulse*.38)).toFixed(4));
-    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*1.1).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-enter)*18 + (1-narratorPulse)*4).toFixed(2)+"px");
+    const narratorPulse=.52+.48*Math.abs(Math.sin((local*.72+index*.11)*Math.PI));
+    narrator.style.setProperty("--narrator-opacity",(visibility*(.62+narratorPulse*.30)).toFixed(4));
+    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.75).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-enter)*14 + exit*5 + (1-narratorPulse)*3).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
     memoryGhosts(index,local);
