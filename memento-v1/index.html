@@ -47,11 +47,7 @@
     position:absolute;
     inset:0;
     pointer-events:none;
-    background:
-      linear-gradient(rgba(255,255,255,.010) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,.010) 1px,transparent 1px);
-    background-size:56px 56px;
-    opacity:.34;
+    background:none;
   }
 
   .stage::after{
@@ -177,6 +173,65 @@
     opacity:var(--world-opacity);
     pointer-events:none;
   }
+
+
+  /* MEMORY SHARDS — broken fragments, not a decorative background */
+  .shard-field{
+    position:absolute;
+    inset:0;
+    z-index:14;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .shard{
+    --sx:0px;
+    --sy:0px;
+    --sr:0deg;
+    --so:.12;
+    position:absolute;
+    width:var(--sw,84px);
+    height:var(--sh,46px);
+    transform:
+      translate3d(var(--sx),var(--sy),0)
+      rotate(var(--sr));
+    opacity:var(--so);
+    border:1px solid rgba(255,255,255,.22);
+    clip-path:polygon(8% 4%,96% 20%,72% 92%,2% 64%);
+    background:
+      linear-gradient(145deg,rgba(255,255,255,.035),transparent 48%),
+      rgba(255,255,255,.008);
+    will-change:transform,opacity;
+  }
+  .shard::before{
+    content:"";
+    position:absolute;
+    left:8%;
+    top:52%;
+    width:84%;
+    height:1px;
+    background:rgba(255,255,255,.14);
+    transform:rotate(-18deg);
+    transform-origin:center;
+  }
+  .shard::after{
+    content:"";
+    position:absolute;
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    right:8%;
+    top:16%;
+    background:rgba(255,255,255,.42);
+    box-shadow:0 0 7px rgba(255,255,255,.12);
+  }
+
+  .shard.s1{left:7%;top:18%;--sw:102px;--sh:52px}
+  .shard.s2{left:73%;top:16%;--sw:74px;--sh:42px}
+  .shard.s3{left:18%;top:70%;--sw:126px;--sh:58px}
+  .shard.s4{left:81%;top:63%;--sw:92px;--sh:48px}
+  .shard.s5{left:48%;top:10%;--sw:64px;--sh:38px}
+  .shard.s6{left:52%;top:76%;--sw:112px;--sh:54px}
+  .shard.s7{left:32%;top:43%;--sw:58px;--sh:34px}
 
   /* MEMORY CARD */
   .memory-card{
@@ -395,6 +450,7 @@
 
   @media(prefers-reduced-motion:reduce){
     .memory-card,.narrator{filter:none!important}
+    .shard-field{display:none}
   }
 </style>
 </head>
@@ -422,6 +478,16 @@
   </section>
 
   <section class="world" id="world">
+    <div class="shard-field" id="shardField" aria-hidden="true">
+      <span class="shard s1"></span>
+      <span class="shard s2"></span>
+      <span class="shard s3"></span>
+      <span class="shard s4"></span>
+      <span class="shard s5"></span>
+      <span class="shard s6"></span>
+      <span class="shard s7"></span>
+    </div>
+
     <div class="memory-card" id="memoryCard">
       <div class="scene" id="sceneLabel">FILM 01</div>
       <h2 id="memoryTitle">사진이 흔들립니다.</h2>
@@ -479,6 +545,40 @@
     document.getElementById("fragment3"),
     document.getElementById("fragment4")
   ];
+
+
+  const shards=[...document.querySelectorAll(".shard")];
+  const shardMotion=[
+    {x:95,y:-46,r:38,s:.34,p:.2},
+    {x:-82,y:62,r:-44,s:.28,p:1.0},
+    {x:116,y:-34,r:52,s:.42,p:1.8},
+    {x:-104,y:-58,r:-36,s:.31,p:2.6},
+    {x:68,y:76,r:64,s:.24,p:3.4},
+    {x:-92,y:-72,r:-58,s:.38,p:4.2},
+    {x:74,y:-44,r:46,s:.29,p:5.0}
+  ];
+
+  /*
+    Text is no longer locked 1:1 to scroll position.
+    The target still follows the film structure, but the rendered paragraph
+    follows with inertia — roughly 30–50% of an abrupt scroll displacement
+    at first, then glides toward the target like a body on ice.
+  */
+  const motionState={
+    ready:false,
+    scene:-1,
+    x:0,y:0,
+    opacity:0,
+    blur:1,
+    glow:0,
+    scale:.997,
+    tx:0,ty:0,
+    topacity:0,
+    tblur:1,
+    tglow:0,
+    tscale:.997
+  };
+  let motionRaf=0;
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
@@ -686,6 +786,21 @@
 
     const local=clamp((p-scene.start)/Math.max(scene.end-scene.start,.0001),0,1);
 
+    // Broken-memory shards drift at different, restrained scroll ratios.
+    shards.forEach((el,i)=>{
+      const cfg=shardMotion[i];
+      const drift=p*cfg.s;
+      const wave=Math.sin((p*2.4+cfg.p)*Math.PI);
+      const tx=(drift*cfg.x + wave*9).toFixed(2);
+      const ty=(drift*cfg.y + Math.cos((p*1.9+cfg.p)*Math.PI)*7).toFixed(2);
+      const rot=(drift*cfg.r + wave*5).toFixed(2);
+      const op=(.055 + .095*(.5+.5*Math.sin((p*2.1+cfg.p)*Math.PI))).toFixed(3);
+      el.style.setProperty("--sx",tx+"px");
+      el.style.setProperty("--sy",ty+"px");
+      el.style.setProperty("--sr",rot+"deg");
+      el.style.setProperty("--so",op);
+    });
+
     /*
       Memory sharpness is not monotonic:
       it arrives slowly, becomes readable, then dissolves before the next memory.
@@ -795,13 +910,29 @@
 
     memoryCard.style.setProperty("--card-x",scene.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--card-y",scene.y.toFixed(2)+"vh");
-    memoryCard.style.setProperty("--fly-x",flyX.toFixed(2)+"vw");
-    memoryCard.style.setProperty("--fly-y",flyY.toFixed(2)+"vh");
-    memoryCard.style.setProperty("--card-opacity",(visibility*(.88+.12*clarity)).toFixed(4));
-    memoryCard.style.setProperty("--card-blur",((1-clarity)*2.15 + (1-visibility)*.45).toFixed(2)+"px");
-    memoryCard.style.setProperty("--card-scale",(.997 + visibility*.002).toFixed(4));
-    memoryCard.style.setProperty("--glow-opacity",glowOpacity.toFixed(4));
-    memoryCard.style.setProperty("--glow-scale",glowScale.toFixed(4));
+
+    motionState.tx=flyX;
+    motionState.ty=flyY;
+    motionState.topacity=visibility*(.88+.12*clarity);
+    motionState.tblur=((1-clarity)*2.15 + (1-visibility)*.45);
+    motionState.tglow=glowOpacity;
+    motionState.tscale=(.997 + visibility*.002);
+
+    if(!motionState.ready){
+      motionState.x=motionState.tx;
+      motionState.y=motionState.ty;
+      motionState.opacity=motionState.topacity;
+      motionState.blur=motionState.tblur;
+      motionState.glow=motionState.tglow;
+      motionState.scale=motionState.tscale;
+      motionState.ready=true;
+    }
+
+    /*
+      A scene change keeps the current inertial position instead of snapping.
+      Only the text content changes; the paragraph glides toward the new target.
+    */
+    motionState.scene=index;
 
     sceneLabel.textContent=scene.label;
     memoryTitle.textContent=scene.title;
@@ -821,12 +952,49 @@
     memoryGhosts(index,local);
   }
 
+  function animateMotion(){
+    motionRaf=0;
+    if(!motionState.ready) return;
+
+    /*
+      0.075 per frame gives a strong visual lag.
+      An abrupt target change first moves only a small fraction, then eases in,
+      which reads closer to ~30–50 movement for a 100-scroll gesture.
+    */
+    const follow=.075;
+    motionState.x += (motionState.tx-motionState.x)*follow;
+    motionState.y += (motionState.ty-motionState.y)*follow;
+    motionState.opacity += (motionState.topacity-motionState.opacity)*.060;
+    motionState.blur += (motionState.tblur-motionState.blur)*.055;
+    motionState.glow += (motionState.tglow-motionState.glow)*.050;
+    motionState.scale += (motionState.tscale-motionState.scale)*.060;
+
+    memoryCard.style.setProperty("--fly-x",motionState.x.toFixed(2)+"vw");
+    memoryCard.style.setProperty("--fly-y",motionState.y.toFixed(2)+"vh");
+    memoryCard.style.setProperty("--card-opacity",motionState.opacity.toFixed(4));
+    memoryCard.style.setProperty("--card-blur",motionState.blur.toFixed(2)+"px");
+    memoryCard.style.setProperty("--card-scale",motionState.scale.toFixed(4));
+    memoryCard.style.setProperty("--glow-opacity",motionState.glow.toFixed(4));
+    memoryCard.style.setProperty("--glow-scale",(1 + Math.max(motionState.glow,0)*.16).toFixed(4));
+
+    const delta=
+      Math.abs(motionState.tx-motionState.x)+
+      Math.abs(motionState.ty-motionState.y)+
+      Math.abs(motionState.topacity-motionState.opacity)*10+
+      Math.abs(motionState.tblur-motionState.blur);
+
+    if(delta>.012){
+      motionRaf=requestAnimationFrame(animateMotion);
+    }
+  }
+
   let raf=0;
   function requestRender(){
     if(!raf){
       raf=requestAnimationFrame(()=>{
         raf=0;
         render();
+        if(!motionRaf) motionRaf=requestAnimationFrame(animateMotion);
       });
     }
   }
