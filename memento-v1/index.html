@@ -619,6 +619,9 @@
   ];
   scenes.forEach((scene,i)=>scene.enter=entrances[i%entrances.length]);
 
+  // Preserve uneven memory lengths, but prevent any scene from becoming too short to read.
+  scenes.forEach(scene=>{ scene.weight=Math.max(scene.weight,1.05); });
+
   // Deliberately uneven scene spans.
   const totalWeight=scenes.reduce((s,x)=>s+x.weight,0);
   let acc=0;
@@ -646,8 +649,8 @@
     afterB.textContent=earlier ? earlier.title : "";
     afterC.textContent=index>6 ? scenes[2].title : "";
 
-    const ghostIn=smoother(clamp((local-.03)/.22,0,1));
-    const ghostOut=1-smoother(clamp((local-.88)/.12,0,1));
+    const ghostIn=smoother(clamp(local/.28,0,1));
+    const ghostOut=1-smoother(clamp((local-.68)/.32,0,1));
     const g=ghostIn*ghostOut;
 
     afterA.style.opacity=(g*.64).toFixed(3);
@@ -704,20 +707,30 @@
       slides into place like it is moving across ice.
     */
     /*
-      Planet-like memory motion:
-      appearance, movement and disappearance all use the full scene duration.
-      Nothing snaps in or out; the paragraph slowly approaches, passes,
-      and recedes like a body moving through a long orbit.
+      Readable orbital motion:
+      0–30%   : distant approach
+      30–68%  : almost-still reading glide
+      68–100% : departure + dimming at the same time
+
+      The paragraph never freezes abruptly, but while it is meant to be read
+      its movement is intentionally much slower than the user's scroll.
     */
-    const orbitT=smoother(clamp(local,0,1));
+    const arriveT=smoother(clamp(local/.30,0,1));
+    const readT=smoother(clamp((local-.30)/.38,0,1));
+    const departT=smoother(clamp((local-.68)/.32,0,1));
 
-    // One continuous exposure curve across the whole scene.
-    // The low exponent keeps the memory readable for a long time.
-    const exposure=Math.pow(Math.max(Math.sin(local*Math.PI),0),.42);
-    const visibility=exposure;
+    let visibility;
+    if(local < .30){
+      visibility=smoother(clamp(local/.30,0,1));
+    }else if(local < .68){
+      visibility=1;
+    }else{
+      // Fade happens for the entire departure, never as a stationary dim.
+      visibility=1-departT;
+    }
 
-    // Blur changes very gently with distance.
-    const clarity=.80 + scene.clarity*.14 + exposure*.035;
+    // Keep blur subtle enough for continuous reading.
+    const clarity=.83 + scene.clarity*.12 + visibility*.025;
 
     const baseX=scene.enter.x;
     const baseY=scene.enter.y;
@@ -729,23 +742,27 @@
     const normY= dirX;
 
     /*
-      The orbit is huge, but only a shallow section is visible on screen.
-      Start far away, glide past the anchor, then continue outward.
+      Position is intentionally piecewise:
+      - approach covers meaningful distance
+      - reading phase barely drifts
+      - departure resumes movement while opacity falls
     */
-    const startDistance=2.15;
-    const endDistance=-.72;
-    const radial=lerp(startDistance,endDistance,orbitT);
+    let radial;
+    if(local < .30){
+      radial=lerp(1.35,.10,arriveT);
+    }else if(local < .68){
+      radial=lerp(.10,-.04,readT);
+    }else{
+      radial=lerp(-.04,-.82,departT);
+    }
 
-    const distantX=baseX*radial;
-    const distantY=baseY*radial;
+    // Only a shallow visible bend from a huge implied orbit.
+    const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
+    const curveX=normX*3.6*arcEnvelope;
+    const curveY=normY*2.6*arcEnvelope;
 
-    // Large-radius orbit perceived as a slow, shallow bend.
-    const arc=Math.sin(orbitT*Math.PI);
-    const curveX=normX*7.0*arc;
-    const curveY=normY*5.2*arc;
-
-    const flyX=distantX+curveX;
-    const flyY=distantY+curveY;
+    const flyX=baseX*radial+curveX;
+    const flyY=baseY*radial+curveY;
 
     const glowBreath=.74+.26*Math.sin((local*.40+.10)*Math.PI);
     const glowOpacity=visibility*(.18+.18*glowBreath);
@@ -757,7 +774,7 @@
     memoryCard.style.setProperty("--fly-y",flyY.toFixed(2)+"vh");
     memoryCard.style.setProperty("--card-opacity",(visibility*(.88+.12*clarity)).toFixed(4));
     memoryCard.style.setProperty("--card-blur",((1-clarity)*2.15 + (1-visibility)*.45).toFixed(2)+"px");
-    memoryCard.style.setProperty("--card-scale",(.996 + exposure*.003).toFixed(4));
+    memoryCard.style.setProperty("--card-scale",(.997 + visibility*.002).toFixed(4));
     memoryCard.style.setProperty("--glow-opacity",glowOpacity.toFixed(4));
     memoryCard.style.setProperty("--glow-scale",glowScale.toFixed(4));
 
@@ -770,10 +787,10 @@
       Narrator clarity intentionally disagrees with memory clarity.
       Sometimes the page sounds confident when the memory is blurry.
     */
-    const narratorPulse=.70+.30*Math.abs(Math.sin((local*.30+index*.07)*Math.PI));
-    narrator.style.setProperty("--narrator-opacity",(visibility*(.72+narratorPulse*.22)).toFixed(4));
-    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.42).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-orbitT)*6 + orbitT*2 + (1-narratorPulse)*1.2).toFixed(2)+"px");
+    const narratorPulse=.74+.26*Math.abs(Math.sin((local*.24+index*.06)*Math.PI));
+    narrator.style.setProperty("--narrator-opacity",(visibility*(.76+narratorPulse*.18)).toFixed(4));
+    narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.34).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-arriveT)*5 + departT*7 + (1-narratorPulse)).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
     memoryGhosts(index,local);
