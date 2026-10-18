@@ -898,8 +898,9 @@
       Most of the extra distance is along the approach/departure axis.
     */
     const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
-    const curveX=normX*9.50*arcEnvelope;
-    const curveY=normY*6.80*arcEnvelope;
+    // Keep only a gentle curved trajectory — no exaggerated sweep.
+    const curveX=normX*3.20*arcEnvelope;
+    const curveY=normY*2.30*arcEnvelope;
 
     const flyX=baseX*radial+curveX;
     const flyY=baseY*radial+curveY;
@@ -957,17 +958,17 @@
     if(!motionState.ready) return;
 
     /*
-      0.075 per frame gives a strong visual lag.
-      An abrupt target change first moves only a small fraction, then eases in,
-      which reads closer to ~30–50 movement for a 100-scroll gesture.
+      Very low follow rate: the paragraph deliberately lags far behind scroll.
+      It keeps gliding toward the target instead of tracking the wheel gesture.
+      The curve remains gentle while the movement itself is much slower.
     */
-    const follow=.042;
+    const follow=.014;
     motionState.x += (motionState.tx-motionState.x)*follow;
     motionState.y += (motionState.ty-motionState.y)*follow;
-    motionState.opacity += (motionState.topacity-motionState.opacity)*.045;
-    motionState.blur += (motionState.tblur-motionState.blur)*.040;
-    motionState.glow += (motionState.tglow-motionState.glow)*.040;
-    motionState.scale += (motionState.tscale-motionState.scale)*.045;
+    motionState.opacity += (motionState.topacity-motionState.opacity)*.022;
+    motionState.blur += (motionState.tblur-motionState.blur)*.020;
+    motionState.glow += (motionState.tglow-motionState.glow)*.020;
+    motionState.scale += (motionState.tscale-motionState.scale)*.022;
 
     memoryCard.style.setProperty("--fly-x",motionState.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--fly-y",motionState.y.toFixed(2)+"vh");
