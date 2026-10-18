@@ -763,19 +763,24 @@
       The scene still approaches and recedes, but each unit of scroll
       moves the paragraph far less, making it possible to read while moving.
     */
+    /*
+      Movement distance is expanded to roughly 3× the previous version,
+      while the timing remains slow. The paragraph travels much farther
+      without becoming faster per phase.
+    */
     let radial;
     if(local < .48){
-      radial=lerp(.82,.28,arriveT);
+      radial=lerp(2.46,.84,arriveT);
     }else if(local < .62){
-      radial=lerp(.28,.24,readT);
+      radial=lerp(.84,.72,readT);
     }else{
-      radial=lerp(.24,-.08,departT);
+      radial=lerp(.72,-.24,departT);
     }
 
-    // Keep the orbital bend subtle; visible lateral travel is also ~1/3.
+    // Orbital lateral displacement also expands to ~3×.
     const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
-    const curveX=normX*1.25*arcEnvelope;
-    const curveY=normY*.90*arcEnvelope;
+    const curveX=normX*3.75*arcEnvelope;
+    const curveY=normY*2.70*arcEnvelope;
 
     const flyX=baseX*radial+curveX;
     const flyY=baseY*radial+curveY;
