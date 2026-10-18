@@ -195,11 +195,11 @@
       translate3d(var(--sx),var(--sy),0)
       rotate(var(--sr));
     opacity:var(--so);
-    border:1px solid rgba(255,255,255,.22);
+    border:1px solid rgba(255,255,255,.34);
     clip-path:polygon(8% 4%,96% 20%,72% 92%,2% 64%);
     background:
-      linear-gradient(145deg,rgba(255,255,255,.035),transparent 48%),
-      rgba(255,255,255,.008);
+      linear-gradient(145deg,rgba(255,255,255,.055),transparent 48%),
+      rgba(255,255,255,.012);
     will-change:transform,opacity;
   }
   .shard::before{
@@ -221,8 +221,8 @@
     border-radius:50%;
     right:8%;
     top:16%;
-    background:rgba(255,255,255,.42);
-    box-shadow:0 0 7px rgba(255,255,255,.12);
+    background:rgba(255,255,255,.56);
+    box-shadow:0 0 8px rgba(255,255,255,.16);
   }
 
   .shard.s1{left:7%;top:18%;--sw:102px;--sh:52px}
@@ -315,7 +315,7 @@
     max-width:480px;
     font-size:13px;
     line-height:1.75;
-    color:rgba(255,255,255,.66);
+    color:rgba(255,255,255,.72);
     word-break:keep-all;
     text-shadow:0 0 18px rgba(255,255,255,.035);
   }
@@ -720,7 +720,7 @@
   scenes.forEach((scene,i)=>scene.enter=entrances[i%entrances.length]);
 
   // Preserve uneven memory lengths, but prevent any scene from becoming too short to read.
-  scenes.forEach(scene=>{ scene.weight=Math.max(scene.weight,1.05); });
+  scenes.forEach(scene=>{ scene.weight=Math.max(scene.weight,1.35); });
 
   // Deliberately uneven scene spans.
   const totalWeight=scenes.reduce((s,x)=>s+x.weight,0);
@@ -794,7 +794,7 @@
       const tx=(drift*cfg.x + wave*9).toFixed(2);
       const ty=(drift*cfg.y + Math.cos((p*1.9+cfg.p)*Math.PI)*7).toFixed(2);
       const rot=(drift*cfg.r + wave*5).toFixed(2);
-      const op=(.055 + .095*(.5+.5*Math.sin((p*2.1+cfg.p)*Math.PI))).toFixed(3);
+      const op=(.14 + .14*(.5+.5*Math.sin((p*2.1+cfg.p)*Math.PI))).toFixed(3);
       el.style.setProperty("--sx",tx+"px");
       el.style.setProperty("--sy",ty+"px");
       el.style.setProperty("--sr",rot+"deg");
@@ -898,8 +898,8 @@
       Most of the extra distance is along the approach/departure axis.
     */
     const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
-    const curveX=normX*4.20*arcEnvelope;
-    const curveY=normY*3.05*arcEnvelope;
+    const curveX=normX*9.50*arcEnvelope;
+    const curveY=normY*6.80*arcEnvelope;
 
     const flyX=baseX*radial+curveX;
     const flyY=baseY*radial+curveY;
@@ -913,8 +913,8 @@
 
     motionState.tx=flyX;
     motionState.ty=flyY;
-    motionState.topacity=visibility*(.88+.12*clarity);
-    motionState.tblur=((1-clarity)*2.15 + (1-visibility)*.45);
+    motionState.topacity=Math.max(.92, visibility*(.96+.08*clarity));
+    motionState.tblur=((1-clarity)*.85 + (1-visibility)*.18);
     motionState.tglow=glowOpacity;
     motionState.tscale=(.997 + visibility*.002);
 
@@ -961,13 +961,13 @@
       An abrupt target change first moves only a small fraction, then eases in,
       which reads closer to ~30–50 movement for a 100-scroll gesture.
     */
-    const follow=.075;
+    const follow=.042;
     motionState.x += (motionState.tx-motionState.x)*follow;
     motionState.y += (motionState.ty-motionState.y)*follow;
-    motionState.opacity += (motionState.topacity-motionState.opacity)*.060;
-    motionState.blur += (motionState.tblur-motionState.blur)*.055;
-    motionState.glow += (motionState.tglow-motionState.glow)*.050;
-    motionState.scale += (motionState.tscale-motionState.scale)*.060;
+    motionState.opacity += (motionState.topacity-motionState.opacity)*.045;
+    motionState.blur += (motionState.tblur-motionState.blur)*.040;
+    motionState.glow += (motionState.tglow-motionState.glow)*.040;
+    motionState.scale += (motionState.tscale-motionState.scale)*.045;
 
     memoryCard.style.setProperty("--fly-x",motionState.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--fly-y",motionState.y.toFixed(2)+"vh");
