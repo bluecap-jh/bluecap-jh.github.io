@@ -567,6 +567,15 @@
   const motionState={
     ready:false,
     scene:-1,
+
+    // The memory timeline itself deliberately lags far behind scroll.
+    p:0,
+    tp:0,
+
+    // Anchor position also glides between scenes instead of snapping.
+    ax:50, ay:50,
+    tax:50, tay:50,
+
     x:0,y:0,
     opacity:0,
     blur:1,
@@ -749,8 +758,9 @@
     afterB.textContent=earlier ? earlier.title : "";
     afterC.textContent=index>6 ? scenes[2].title : "";
 
-    const ghostIn=smoother(clamp(local/.46,0,1));
-    const ghostOut=Math.pow(Math.max(1-smoother(clamp((local-.56)/.44,0,1)),0),.40);
+    const ghostIn=smoother(clamp(local/.42,0,1));
+    const ghostDepart=smoother(clamp((local-.52)/.48,0,1));
+    const ghostOut=1-Math.pow(ghostDepart,2.4);
     const g=ghostIn*ghostOut;
 
     afterA.style.opacity=(g*.64).toFixed(3);
@@ -782,9 +792,14 @@
     root.style.setProperty("--final-y",((1-finalIn)*20).toFixed(2)+"px");
 
     const p=clamp((raw-.095)/.81,0,1);
-    const {scene,index}=sceneAt(p);
 
-    const local=clamp((p-scene.start)/Math.max(scene.end-scene.start,.0001),0,1);
+    // Scroll only moves the target. The visible memory timeline catches up slowly.
+    motionState.tp=p;
+
+    const memoryP=motionState.ready ? motionState.p : p;
+    const {scene,index}=sceneAt(memoryP);
+
+    const local=clamp((memoryP-scene.start)/Math.max(scene.end-scene.start,.0001),0,1);
 
     // Broken-memory shards drift at different, restrained scroll ratios.
     shards.forEach((el,i)=>{
@@ -836,24 +851,25 @@
       Early opacity is intentionally restrained so it feels distant rather than
       suddenly "popping" into readable range.
     */
-    const arriveT=smoother(clamp(local/.48,0,1));
-    const readT=smoother(clamp((local-.48)/.08,0,1));
-    const departT=smoother(clamp((local-.56)/.44,0,1));
+    const arriveT=smoother(clamp(local/.42,0,1));
+    const readT=smoother(clamp((local-.42)/.10,0,1));
+    const departT=smoother(clamp((local-.52)/.48,0,1));
 
     let visibility;
-    if(local < .48){
-      const reveal=smoother(clamp(local/.48,0,1));
-      visibility=Math.pow(reveal,1.70);
-    }else if(local < .56){
+    if(local < .42){
+      const reveal=smoother(clamp(local/.42,0,1));
+      visibility=Math.pow(reveal,1.55);
+    }else if(local < .52){
       visibility=1;
     }else{
       /*
-        Very slow dim-out:
-        fading now spans 44% of the scene and the opacity curve is heavily
-        weighted toward staying visible. It recedes for a long time before
-        finally disappearing.
+        Long moving dim-out:
+        almost half of every memory is spent receding.
+        Brightness stays high for most of that travel and only falls away
+        near the very end.
       */
-      visibility=Math.pow(Math.max(1-departT,0),.34);
+      const fade=Math.pow(departT,2.8);
+      visibility=1-fade;
     }
 
     // Keep blur subtle enough for continuous reading.
@@ -885,12 +901,12 @@
       without becoming faster per phase.
     */
     let radial;
-    if(local < .48){
+    if(local < .42){
       radial=lerp(3.95,1.02,arriveT);
-    }else if(local < .56){
+    }else if(local < .52){
       radial=lerp(1.02,.90,readT);
     }else{
-      radial=lerp(.90,-1.18,departT);
+      radial=lerp(.90,-1.36,departT);
     }
 
     /*
@@ -898,9 +914,9 @@
       Most of the extra distance is along the approach/departure axis.
     */
     const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
-    // Keep only a gentle curved trajectory — no exaggerated sweep.
-    const curveX=normX*3.20*arcEnvelope;
-    const curveY=normY*2.30*arcEnvelope;
+    // Preserve a visible curved orbit without making it a giant sweep.
+    const curveX=normX*5.20*arcEnvelope;
+    const curveY=normY*3.80*arcEnvelope;
 
     const flyX=baseX*radial+curveX;
     const flyY=baseY*radial+curveY;
@@ -909,17 +925,20 @@
     const glowOpacity=visibility*(.18+.18*glowBreath);
     const glowScale=1 + Math.sin(local*Math.PI)*.070;
 
-    memoryCard.style.setProperty("--card-x",scene.x.toFixed(2)+"vw");
-    memoryCard.style.setProperty("--card-y",scene.y.toFixed(2)+"vh");
+    motionState.tax=scene.x;
+    motionState.tay=scene.y;
 
     motionState.tx=flyX;
     motionState.ty=flyY;
-    motionState.topacity=Math.max(.92, visibility*(.96+.08*clarity));
+    motionState.topacity=visibility*(.96+.04*clarity);
     motionState.tblur=((1-clarity)*.85 + (1-visibility)*.18);
     motionState.tglow=glowOpacity;
     motionState.tscale=(.997 + visibility*.002);
 
     if(!motionState.ready){
+      motionState.p=motionState.tp;
+      motionState.ax=motionState.tax;
+      motionState.ay=motionState.tay;
       motionState.x=motionState.tx;
       motionState.y=motionState.ty;
       motionState.opacity=motionState.topacity;
@@ -958,18 +977,32 @@
     if(!motionState.ready) return;
 
     /*
-      Very low follow rate: the paragraph deliberately lags far behind scroll.
-      It keeps gliding toward the target instead of tracking the wheel gesture.
-      The curve remains gentle while the movement itself is much slower.
+      The memory timeline is intentionally much slower than scroll.
+      A large wheel gesture changes the target immediately, but the actual
+      paragraph time advances only a tiny fraction per frame.
     */
-    const follow=.014;
-    motionState.x += (motionState.tx-motionState.x)*follow;
-    motionState.y += (motionState.ty-motionState.y)*follow;
-    motionState.opacity += (motionState.topacity-motionState.opacity)*.022;
-    motionState.blur += (motionState.tblur-motionState.blur)*.020;
-    motionState.glow += (motionState.tglow-motionState.glow)*.020;
-    motionState.scale += (motionState.tscale-motionState.scale)*.022;
+    const timeFollow=.0045;
+    const moveFollow=.010;
 
+    motionState.p += (motionState.tp-motionState.p)*timeFollow;
+
+    // Recalculate the visible scene from the delayed memory timeline.
+    render();
+
+    motionState.ax += (motionState.tax-motionState.ax)*.008;
+    motionState.ay += (motionState.tay-motionState.ay)*.008;
+
+    motionState.x += (motionState.tx-motionState.x)*moveFollow;
+    motionState.y += (motionState.ty-motionState.y)*moveFollow;
+
+    // Opacity is even slower so dimming reads as a long dissolve.
+    motionState.opacity += (motionState.topacity-motionState.opacity)*.010;
+    motionState.blur += (motionState.tblur-motionState.blur)*.009;
+    motionState.glow += (motionState.tglow-motionState.glow)*.009;
+    motionState.scale += (motionState.tscale-motionState.scale)*.010;
+
+    memoryCard.style.setProperty("--card-x",motionState.ax.toFixed(2)+"vw");
+    memoryCard.style.setProperty("--card-y",motionState.ay.toFixed(2)+"vh");
     memoryCard.style.setProperty("--fly-x",motionState.x.toFixed(2)+"vw");
     memoryCard.style.setProperty("--fly-y",motionState.y.toFixed(2)+"vh");
     memoryCard.style.setProperty("--card-opacity",motionState.opacity.toFixed(4));
@@ -979,12 +1012,14 @@
     memoryCard.style.setProperty("--glow-scale",(1 + Math.max(motionState.glow,0)*.16).toFixed(4));
 
     const delta=
+      Math.abs(motionState.tp-motionState.p)*120+
       Math.abs(motionState.tx-motionState.x)+
       Math.abs(motionState.ty-motionState.y)+
-      Math.abs(motionState.topacity-motionState.opacity)*10+
-      Math.abs(motionState.tblur-motionState.blur);
+      Math.abs(motionState.tax-motionState.ax)+
+      Math.abs(motionState.tay-motionState.ay)+
+      Math.abs(motionState.topacity-motionState.opacity)*12;
 
-    if(delta>.012){
+    if(delta>.006){
       motionRaf=requestAnimationFrame(animateMotion);
     }
   }
