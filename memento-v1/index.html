@@ -650,7 +650,7 @@
     afterC.textContent=index>6 ? scenes[2].title : "";
 
     const ghostIn=smoother(clamp(local/.46,0,1));
-    const ghostOut=1-smoother(clamp((local-.62)/.38,0,1));
+    const ghostOut=Math.pow(Math.max(1-smoother(clamp((local-.56)/.44,0,1)),0),.40);
     const g=ghostIn*ghostOut;
 
     afterA.style.opacity=(g*.64).toFixed(3);
@@ -722,22 +722,23 @@
       suddenly "popping" into readable range.
     */
     const arriveT=smoother(clamp(local/.48,0,1));
-    const readT=smoother(clamp((local-.48)/.14,0,1));
-    const departT=smoother(clamp((local-.62)/.38,0,1));
+    const readT=smoother(clamp((local-.48)/.08,0,1));
+    const departT=smoother(clamp((local-.56)/.44,0,1));
 
     let visibility;
     if(local < .48){
       const reveal=smoother(clamp(local/.48,0,1));
       visibility=Math.pow(reveal,1.70);
-    }else if(local < .62){
+    }else if(local < .56){
       visibility=1;
     }else{
       /*
-        Long dim-out:
-        opacity falls for the entire 38% departure interval,
-        while the paragraph keeps drifting away.
+        Very slow dim-out:
+        fading now spans 44% of the scene and the opacity curve is heavily
+        weighted toward staying visible. It recedes for a long time before
+        finally disappearing.
       */
-      visibility=1-Math.pow(departT,1.22);
+      visibility=Math.pow(Math.max(1-departT,0),.34);
     }
 
     // Keep blur subtle enough for continuous reading.
@@ -770,17 +771,20 @@
     */
     let radial;
     if(local < .48){
-      radial=lerp(2.46,.84,arriveT);
-    }else if(local < .62){
-      radial=lerp(.84,.72,readT);
+      radial=lerp(3.95,1.02,arriveT);
+    }else if(local < .56){
+      radial=lerp(1.02,.90,readT);
     }else{
-      radial=lerp(.72,-.24,departT);
+      radial=lerp(.90,-1.18,departT);
     }
 
-    // Orbital lateral displacement also expands to ~3×.
+    /*
+      More total travel, but without making the on-screen curve messy.
+      Most of the extra distance is along the approach/departure axis.
+    */
     const arcEnvelope=Math.sin(clamp(local,0,1)*Math.PI);
-    const curveX=normX*3.75*arcEnvelope;
-    const curveY=normY*2.70*arcEnvelope;
+    const curveX=normX*4.20*arcEnvelope;
+    const curveY=normY*3.05*arcEnvelope;
 
     const flyX=baseX*radial+curveX;
     const flyY=baseY*radial+curveY;
@@ -811,7 +815,7 @@
     const narratorPulse=.74+.26*Math.abs(Math.sin((local*.24+index*.06)*Math.PI));
     narrator.style.setProperty("--narrator-opacity",(visibility*(.76+narratorPulse*.18)).toFixed(4));
     narrator.style.setProperty("--narrator-blur",((1-narratorPulse)*.34).toFixed(2)+"px");
-    narrator.style.setProperty("--narrator-y",((1-arriveT)*3 + departT*3 + (1-narratorPulse)*.8).toFixed(2)+"px");
+    narrator.style.setProperty("--narrator-y",((1-arriveT)*3 + departT*5 + (1-narratorPulse)*.8).toFixed(2)+"px");
     narratorText.textContent=scene.narrator;
 
     memoryGhosts(index,local);
