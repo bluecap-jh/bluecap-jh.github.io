@@ -3,19 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MEMENTO — Chronological Reconstruction</title>
+<title>MEMENTO — Film Order / Memory Study</title>
 <style>
   :root{
+    --progress:0;
     --paper:#f1f1ee;
-    --muted:rgba(255,255,255,.46);
-    --faint:rgba(255,255,255,.18);
+    --muted:rgba(255,255,255,.52);
+    --faint:rgba(255,255,255,.20);
     --line:rgba(255,255,255,.12);
   }
+
   *{box-sizing:border-box}
-  html{
-    background:#000;
-    scroll-behavior:smooth;
-  }
+  html{background:#000;scroll-behavior:smooth}
   body{
     margin:0;
     background:#000;
@@ -24,10 +23,172 @@
     overflow-x:hidden;
   }
 
+  /* ---------- FILM BACKGROUND ---------- */
+  .film-bg{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+
+  .film-strip{
+    position:absolute;
+    top:-12vh;
+    bottom:-12vh;
+    width:112px;
+    opacity:.16;
+    border-left:1px solid rgba(255,255,255,.16);
+    border-right:1px solid rgba(255,255,255,.16);
+    background:
+      linear-gradient(
+        to bottom,
+        transparent 0 9%,
+        rgba(255,255,255,.045) 9% 91%,
+        transparent 91% 100%
+      );
+    background-size:100% 138px;
+  }
+
+  .film-strip::before,
+  .film-strip::after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    width:12px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.24) 0 12px,
+        transparent 12px 24px
+      );
+    opacity:.72;
+  }
+  .film-strip::before{left:7px}
+  .film-strip::after{right:7px}
+
+  .film-strip.left{
+    left:2.3vw;
+    transform:rotate(-2.4deg) translateY(calc(var(--progress) * -170px));
+  }
+
+  .film-strip.right{
+    right:3vw;
+    transform:rotate(2deg) translateY(calc(var(--progress) * 220px));
+    opacity:.10;
+  }
+
+  .film-frame-line{
+    position:absolute;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:1px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.16) 0 1px,
+        transparent 1px 137px
+      );
+  }
+
+  /* ---------- TATTOO / MEMORY LAYER ---------- */
+  .tattoo-layer{
+    position:fixed;
+    z-index:1;
+    right:7.5vw;
+    top:14vh;
+    width:min(310px,27vw);
+    height:72vh;
+    pointer-events:none;
+    color:rgba(255,255,255,.13);
+    mix-blend-mode:screen;
+  }
+
+  .tattoo{
+    position:absolute;
+    opacity:0;
+    transform:translateY(9px);
+    transition:opacity .7s ease, transform .7s ease;
+    font-family:Georgia,"Times New Roman",serif;
+    font-style:italic;
+    letter-spacing:.025em;
+  }
+  .tattoo.show{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  .tattoo.t1{
+    top:2%;
+    right:8%;
+    font-size:15px;
+    transform:rotate(-5deg) translateY(9px);
+  }
+  .tattoo.t1.show{transform:rotate(-5deg) translateY(0)}
+
+  .tattoo.t2{
+    top:20%;
+    left:5%;
+    font-size:12px;
+    transform:rotate(7deg) translateY(9px);
+  }
+  .tattoo.t2.show{transform:rotate(7deg) translateY(0)}
+
+  .tattoo.t3{
+    top:38%;
+    right:2%;
+    font-size:19px;
+    letter-spacing:.08em;
+    transform:rotate(-8deg) translateY(9px);
+  }
+  .tattoo.t3.show{transform:rotate(-8deg) translateY(0)}
+
+  .tattoo.t4{
+    top:58%;
+    left:12%;
+    font-size:13px;
+    transform:rotate(4deg) translateY(9px);
+  }
+  .tattoo.t4.show{transform:rotate(4deg) translateY(0)}
+
+  .tattoo.t5{
+    bottom:6%;
+    right:5%;
+    font-size:17px;
+    transform:rotate(-3deg) translateY(9px);
+  }
+  .tattoo.t5.show{transform:rotate(-3deg) translateY(0)}
+
+  .tattoo-line{
+    position:absolute;
+    height:1px;
+    background:rgba(255,255,255,.10);
+    transform-origin:left center;
+    opacity:0;
+    transition:opacity .7s ease, width .9s ease;
+    width:0;
+  }
+  .tattoo-line.show{opacity:1}
+
+  .tattoo-line.l1{top:14%;left:8%;transform:rotate(12deg)}
+  .tattoo-line.l2{top:33%;left:26%;transform:rotate(-18deg)}
+  .tattoo-line.l3{top:51%;left:4%;transform:rotate(8deg)}
+  .tattoo-line.l4{top:73%;left:20%;transform:rotate(-9deg)}
+
+  .tattoo-line.l1.show{width:62%}
+  .tattoo-line.l2.show{width:48%}
+  .tattoo-line.l3.show{width:70%}
+  .tattoo-line.l4.show{width:52%}
+
+  /* ---------- MAIN ---------- */
   .page{
-    width:min(1180px,92vw);
+    position:relative;
+    z-index:5;
+    width:min(1120px,90vw);
     margin:0 auto;
-    padding:0 0 18vh;
+    padding-bottom:24vh;
   }
 
   .hero{
@@ -35,417 +196,509 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
-    padding:14vh 0 12vh;
+    padding:16vh 0 16vh;
     border-bottom:1px solid var(--line);
   }
 
   .eyebrow{
+    margin-bottom:20px;
     font-size:9px;
     letter-spacing:.24em;
-    color:rgba(255,255,255,.28);
-    margin-bottom:20px;
+    color:rgba(255,255,255,.30);
   }
 
   h1{
     margin:0;
     font-family:Georgia,"Times New Roman",serif;
-    font-size:clamp(74px,12vw,170px);
+    font-size:clamp(78px,12vw,166px);
     line-height:.88;
     font-weight:500;
     letter-spacing:-.06em;
   }
 
   .hero-copy{
-    width:min(720px,78vw);
-    margin-top:34px;
+    width:min(720px,72vw);
+    margin-top:38px;
     font-size:15px;
-    line-height:1.9;
+    line-height:2.0;
     color:rgba(255,255,255,.58);
     word-break:keep-all;
   }
 
   .hero-note{
-    margin-top:28px;
+    margin-top:34px;
     display:flex;
-    gap:18px;
     align-items:center;
+    gap:18px;
     font-size:9px;
     letter-spacing:.16em;
     color:rgba(255,255,255,.26);
   }
-
   .hero-note::before{
     content:"";
-    width:44px;
+    width:46px;
     height:1px;
     background:rgba(255,255,255,.22);
   }
 
   .timeline{
     position:relative;
-    padding:10vh 0 4vh;
+    padding-top:18vh;
   }
 
   .timeline::before{
     content:"";
     position:absolute;
-    left:16px;
-    top:10vh;
-    bottom:0;
+    left:18px;
+    top:18vh;
+    bottom:4vh;
     width:1px;
     background:linear-gradient(
       to bottom,
       rgba(255,255,255,.05),
-      rgba(255,255,255,.18) 8%,
-      rgba(255,255,255,.18) 92%,
+      rgba(255,255,255,.20) 8%,
+      rgba(255,255,255,.20) 92%,
       rgba(255,255,255,.03)
     );
   }
 
+  /* spacing roughly doubled from the previous build */
   .chapter{
     position:relative;
     display:grid;
-    grid-template-columns:72px minmax(0,1fr);
-    gap:26px;
-    min-height:76vh;
-    padding:9vh 0 11vh;
+    grid-template-columns:82px minmax(0,1fr);
+    gap:32px;
+    min-height:108vh;
+    padding:17vh 0 20vh;
     border-bottom:1px solid rgba(255,255,255,.07);
   }
 
   .marker{
     position:relative;
-    padding-top:4px;
+    padding-top:5px;
   }
 
   .dot{
     position:absolute;
-    left:12px;
-    top:12px;
-    width:9px;
-    height:9px;
+    left:14px;
+    top:14px;
+    width:10px;
+    height:10px;
     border-radius:50%;
-    border:1px solid rgba(255,255,255,.50);
+    border:1px solid rgba(255,255,255,.60);
     background:#000;
   }
 
   .index{
-    margin-left:34px;
+    margin-left:40px;
     font-size:9px;
     letter-spacing:.14em;
-    color:rgba(255,255,255,.23);
-    white-space:nowrap;
+    color:rgba(255,255,255,.24);
   }
 
   .content{
-    width:min(760px,100%);
+    width:min(730px,100%);
   }
 
   .meta{
     display:block;
-    margin-bottom:14px;
+    margin-bottom:20px;
     font-size:9px;
-    letter-spacing:.18em;
-    color:rgba(255,255,255,.26);
+    letter-spacing:.19em;
+    color:rgba(255,255,255,.28);
   }
 
   h2{
     margin:0;
-    font-size:clamp(28px,4vw,56px);
-    line-height:1.3;
+    font-size:clamp(30px,4.1vw,58px);
+    line-height:1.34;
     letter-spacing:-.045em;
     font-weight:500;
     word-break:keep-all;
   }
 
   .body{
-    margin-top:24px;
+    margin-top:42px;
     font-size:15px;
-    line-height:1.95;
-    color:rgba(255,255,255,.62);
+    line-height:2.0;
+    color:rgba(255,255,255,.64);
     word-break:keep-all;
   }
 
   .sub{
-    margin-top:18px;
+    margin-top:34px;
     font-size:12px;
-    line-height:1.8;
-    color:rgba(255,255,255,.38);
+    line-height:1.95;
+    color:rgba(255,255,255,.40);
     word-break:keep-all;
   }
 
   .memory-note{
-    margin-top:30px;
-    padding-top:14px;
-    border-top:1px solid rgba(255,255,255,.09);
+    margin-top:46px;
+    padding-top:18px;
+    border-top:1px solid rgba(255,255,255,.10);
     font-size:10px;
-    line-height:1.75;
+    line-height:1.85;
     letter-spacing:.04em;
-    color:rgba(255,255,255,.26);
+    color:rgba(255,255,255,.28);
+  }
+
+  .track-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    margin-top:24px;
+    font-size:8px;
+    letter-spacing:.15em;
+    color:rgba(255,255,255,.20);
+  }
+  .track-tag::before{
+    content:"";
+    width:18px;
+    height:1px;
+    background:rgba(255,255,255,.18);
   }
 
   .final{
-    min-height:88vh;
+    min-height:100vh;
     display:grid;
     place-items:center;
     text-align:center;
-    padding:14vh 0 10vh;
+    padding:18vh 0 12vh;
   }
 
-  .final-inner{
-    width:min(900px,86vw);
-  }
-
+  .final-inner{width:min(900px,86vw)}
   .final small{
     display:block;
-    margin-bottom:18px;
+    margin-bottom:20px;
     font-size:9px;
     letter-spacing:.20em;
     color:rgba(255,255,255,.25);
   }
-
   .final h3{
     margin:0;
-    font-size:clamp(34px,5.3vw,74px);
+    font-size:clamp(36px,5.4vw,76px);
     line-height:1.3;
     letter-spacing:-.045em;
     font-weight:500;
     word-break:keep-all;
   }
-
   .final p{
     width:min(720px,82vw);
-    margin:24px auto 0;
+    margin:30px auto 0;
     font-size:14px;
-    line-height:1.85;
+    line-height:1.95;
     color:rgba(255,255,255,.48);
     word-break:keep-all;
   }
 
   .progress{
     position:fixed;
-    right:26px;
+    z-index:30;
+    right:24px;
     top:50%;
-    transform:translateY(-50%);
     width:1px;
-    height:32vh;
-    background:rgba(255,255,255,.08);
-    z-index:20;
+    height:30vh;
+    transform:translateY(-50%);
+    background:rgba(255,255,255,.07);
   }
-
   .progress::after{
     content:"";
     position:absolute;
     left:0;
     top:0;
     width:1px;
-    height:var(--progress,0%);
-    background:rgba(255,255,255,.45);
+    height:calc(var(--progress) * 100%);
+    background:rgba(255,255,255,.52);
+  }
+
+  @media(max-width:980px){
+    .tattoo-layer{opacity:.55;right:4vw;width:25vw}
+    .film-strip{opacity:.10}
+    .film-strip.right{display:none}
   }
 
   @media(max-width:760px){
     .page{width:min(92vw,680px)}
-    .hero{padding-top:18vh}
+    .film-strip{width:76px;left:-25px!important}
+    .tattoo-layer{display:none}
+    .progress{display:none}
+    .timeline::before{left:12px}
     .chapter{
       grid-template-columns:46px minmax(0,1fr);
-      gap:14px;
+      gap:16px;
       min-height:auto;
-      padding:12vh 0 14vh;
+      padding:22vh 0 24vh;
     }
-    .timeline::before{left:12px}
     .dot{left:8px}
     .index{display:none}
+    .hero-copy{width:88vw}
     .body{font-size:14px}
-    .progress{display:none}
   }
 </style>
 </head>
 <body>
+
+<div class="film-bg" aria-hidden="true">
+  <div class="film-strip left"><span class="film-frame-line"></span></div>
+  <div class="film-strip right"><span class="film-frame-line"></span></div>
+</div>
+
+<div class="tattoo-layer" aria-hidden="true">
+  <span class="tattoo t1" data-threshold=".16">Remember Sammy Jankis</span>
+  <span class="tattoo-line l1" data-threshold=".22"></span>
+  <span class="tattoo t2" data-threshold=".32">FACT 01</span>
+  <span class="tattoo-line l2" data-threshold=".40"></span>
+  <span class="tattoo t3" data-threshold=".50">DON'T TRUST</span>
+  <span class="tattoo-line l3" data-threshold=".58"></span>
+  <span class="tattoo t4" data-threshold=".68">A MEMORY CAN CHANGE</span>
+  <span class="tattoo-line l4" data-threshold=".76"></span>
+  <span class="tattoo t5" data-threshold=".84">WHO WROTE THE FACT?</span>
+</div>
+
 <div class="progress" aria-hidden="true"></div>
 
 <main class="page">
   <section class="hero">
-    <div class="eyebrow">CHRISTOPHER NOLAN / CHRONOLOGICAL RECONSTRUCTION</div>
+    <div class="eyebrow">CHRISTOPHER NOLAN / FILM ORDER MEMORY STUDY</div>
     <h1>Memento</h1>
     <p class="hero-copy">
-      영화는 기억의 혼란을 체험하게 만들기 위해 시간을 뒤집어 보여줍니다.
-      이 페이지에서는 그 구조를 잠시 해체하고, 사건을 실제 시간 순서대로 다시 놓아봅니다.
-      스크롤은 단순히 앞으로 흐르고, 이야기도 같은 방향으로 진행됩니다.
+      이 페이지는 사건을 실제 시간 순서대로 정리하지 않습니다.
+      관객이 영화에서 정보를 받아들이는 순서대로 따라갑니다.
+      컬러 장면은 결과에서 원인으로 거슬러 올라가고,
+      흑백 장면은 앞으로 진행되며 두 흐름은 끝에서 하나의 현재로 만납니다.
     </p>
-    <div class="hero-note">SCROLL / PAST → PRESENT</div>
+    <div class="hero-note">SCROLL / WATCH THE MEMORY REASSEMBLE</div>
   </section>
 
   <section class="timeline">
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="1">
       <div class="marker"><span class="dot"></span><span class="index">01</span></div>
       <div class="content">
-        <span class="meta">BEFORE THE FILM / MEMORY</span>
-        <h2>레너드는 아내와 함께 평범한 삶을 살고 있었습니다.</h2>
+        <span class="meta">COLOR / RESULT FIRST</span>
+        <h2>영화는 이미 끝난 사건에서 시작합니다.</h2>
         <p class="body">
-          어느 날 두 명의 침입자가 집에 들어오고, 레너드는 습격을 당합니다.
-          이 사건 이후 그는 새로운 기억을 오래 저장하지 못하는 상태가 됩니다.
-          그는 몇 분이 지나면 방금 있었던 일조차 잊어버리고, 기억 대신 사진과 메모, 문신에 의존하기 시작합니다.
+          테디는 이미 죽어 있고, 폴라로이드 사진은 완성되는 대신 거꾸로 희미해집니다.
+          총알과 피, 사진의 변화가 역방향으로 움직이면서 관객은 처음부터 원인보다 결과를 먼저 보게 됩니다.
         </p>
         <p class="sub">
-          이 시점이 이후 모든 행동의 출발점입니다. 레너드는 자신이 기억할 수 없다는 사실만은 알고 있습니다.
+          메멘토의 첫 규칙은 단순합니다. 당신이 지금 본 장면은 앞으로 이어질 사건의 출발점이 아니라,
+          이미 일어난 사건의 끝입니다.
         </p>
-        <div class="memory-note">MEMORY CONDITION / 새로운 기억을 장기적으로 저장하지 못함</div>
+        <div class="memory-note">MEMORY / 결과는 보이지만 이유는 아직 기억할 수 없음</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="2">
       <div class="marker"><span class="dot"></span><span class="index">02</span></div>
       <div class="content">
-        <span class="meta">SELF-MADE SYSTEM</span>
-        <h2>그는 기억 대신 기록을 믿는 시스템을 만듭니다.</h2>
+        <span class="meta">B&W / BEGIN</span>
+        <h2>흑백 화면에서는 시간이 정상적으로 앞으로 갑니다.</h2>
         <p class="body">
-          사람의 얼굴과 이름은 폴라로이드 사진에 적고, 중요한 사실은 몸에 문신으로 남깁니다.
-          그에게 사진과 문신은 기억보다 신뢰할 수 있는 증거처럼 보입니다.
-          하지만 기록을 남긴 사람이 결국 자기 자신이라는 사실은 계속 문제로 남습니다.
+          모텔 방 안의 레너드는 자신의 상태를 설명합니다.
+          그는 새로운 기억을 오래 저장하지 못하고, 사진과 메모, 문신을 이용해 현재를 이어 붙입니다.
+          이 흑백의 흐름만큼은 관객에게 비교적 안정적인 시간축처럼 보입니다.
         </p>
         <p class="sub">
-          “기억은 틀릴 수 있지만 사실은 틀리지 않는다.” 레너드는 그렇게 믿으며 자신의 행동을 조직합니다.
+          하지만 ‘안정적이다’라는 인상조차 영화가 제공한 하나의 장치입니다.
         </p>
         <div class="memory-note">SYSTEM / PHOTO · NOTE · TATTOO</div>
+        <div class="track-tag">B&W TRACK / FORWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="3">
       <div class="marker"><span class="dot"></span><span class="index">03</span></div>
       <div class="content">
-        <span class="meta">SAMMY JANKIS</span>
-        <h2>레너드는 새미 젠키스의 이야기를 자신의 기억 규칙처럼 반복합니다.</h2>
+        <span class="meta">COLOR / ONE STEP EARLIER</span>
+        <h2>다음 컬러 장면은 조금 더 이전으로 돌아갑니다.</h2>
         <p class="body">
-          과거 보험 조사원으로 일하던 레너드는 새미라는 남자의 기억 장애 사례를 조사했다고 말합니다.
-          새미는 새로운 기억을 만들지 못했고, 반복을 통해서도 정상적으로 생활하지 못했습니다.
-          레너드는 이 이야기를 통해 자신의 상태를 설명하고, 동시에 자신이 새미와는 다르다고 믿으려 합니다.
+          테디가 왜 죽게 되었는지 설명해 줄 것 같은 단서가 등장하지만,
+          장면은 여전히 완전한 원인을 제공하지 않습니다.
+          관객은 매번 방금 본 결과를 기억한 채 그보다 조금 전의 사건을 다시 해석하게 됩니다.
         </p>
         <p class="sub">
-          영화가 진행될수록 이 이야기가 정확히 누구의 기억인지조차 불확실해집니다.
+          영화는 설명을 추가하는 대신, 이전에 본 장면의 의미를 계속 바꿉니다.
         </p>
-        <div class="memory-note">RECOLLECTION / 기억은 설명이 아니라 재구성일 수 있음</div>
+        <div class="memory-note">STRUCTURE / 장면이 추가될수록 과거의 의미가 수정됨</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="4">
       <div class="marker"><span class="dot"></span><span class="index">04</span></div>
       <div class="content">
-        <span class="meta">TEDDY / INFORMATION</span>
-        <h2>테디는 레너드의 복수를 돕는다고 말합니다.</h2>
+        <span class="meta">B&W / SAMMY JANKIS</span>
+        <h2>새미 젠키스의 이야기가 기억의 규칙처럼 반복됩니다.</h2>
         <p class="body">
-          테디는 레너드에게 사건에 대한 정보를 주고, 범인을 찾는 일을 도와왔다고 주장합니다.
-          레너드는 그 말을 매번 처음 듣는 것처럼 받아들이고, 그 순간 가진 기록을 기준으로 테디를 판단합니다.
-          둘 사이의 관계는 도움과 조작의 경계에 놓이게 됩니다.
+          레너드는 보험 조사원 시절 만났다고 말하는 새미 젠키스의 사례를 설명합니다.
+          기억 장애와 반복 행동에 대한 이야기는 레너드 자신의 상태를 이해하는 열쇠처럼 보입니다.
         </p>
         <p class="sub">
-          기억이 사라질 때마다 관계도 초기화되지만, 사진에 적힌 한 줄의 문장은 그대로 남습니다.
+          그러나 영화는 이 기억이 어디까지 사실이고 어디서부터 재구성된 것인지 확실하게 말하지 않습니다.
         </p>
-        <div class="memory-note">TRUST / 사람보다 기록을 먼저 믿음</div>
+        <div class="memory-note">RECOLLECTION / 기억은 기록이 아니라 다시 쓰이는 서사일 수 있음</div>
+        <div class="track-tag">B&W TRACK / FORWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="5">
       <div class="marker"><span class="dot"></span><span class="index">05</span></div>
       <div class="content">
-        <span class="meta">JIMMY GRANTZ</span>
-        <h2>레너드는 지미 그랜츠를 자신이 찾던 범인이라고 믿게 됩니다.</h2>
+        <span class="meta">COLOR / NATALIE</span>
+        <h2>나탈리는 한 장면 안에서도 다른 사람처럼 보입니다.</h2>
         <p class="body">
-          테디의 도움으로 레너드는 지미를 외딴 건물로 유인하고 그를 살해합니다.
-          그러나 직후 테디는 충격적인 말을 합니다.
-          레너드가 찾던 진짜 범인은 이미 오래전에 죽었고, 자신이 그 복수를 도왔다는 주장입니다.
+          레너드는 몇 분 전의 감정과 대화를 유지하지 못합니다.
+          나탈리는 그 사실을 알고 있으며, 때로는 그를 이용하고 때로는 필요한 정보를 줍니다.
+          관객 역시 레너드처럼 관계의 맥락을 뒤늦게 조립해야 합니다.
         </p>
         <p class="sub">
-          레너드가 지금까지 계속 복수를 반복해왔을 가능성이 드러나는 순간입니다.
+          누군가를 믿고 있다는 감정은 남지 않지만, 사진에 적힌 한 문장은 남습니다.
         </p>
-        <div class="memory-note">BREAK / 복수의 목표가 이미 끝났을 수 있다는 사실</div>
+        <div class="memory-note">TRUST / 관계보다 기록이 오래 남음</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="6">
       <div class="marker"><span class="dot"></span><span class="index">06</span></div>
       <div class="content">
-        <span class="meta">CHOICE / SELF-DECEPTION</span>
-        <h2>레너드는 기억을 잃기 전에 새로운 거짓말을 남깁니다.</h2>
+        <span class="meta">B&W / THE PHONE</span>
+        <h2>전화 통화는 앞으로 흐르는 시간에 정보를 계속 쌓습니다.</h2>
         <p class="body">
-          테디의 말을 받아들이면 자신의 삶을 지탱해온 목적이 사라집니다.
-          레너드는 그 사실을 견디지 못하고, 미래의 자신이 테디를 범인으로 의심하도록 기록을 조작합니다.
-          차량 번호를 적고, 테디의 사진에 믿지 말라는 메모를 남깁니다.
+          레너드는 자신의 기억 방식과 새미의 이야기를 전화 상대에게 설명합니다.
+          흑백 장면은 하나의 긴 설명처럼 이어지며, 컬러 장면에서 흩어진 사건을 이해할 수 있는 배경을 제공합니다.
         </p>
         <p class="sub">
-          여기서 중요한 것은 “기억을 잃어서 속는 것”만이 아닙니다.
-          레너드는 기억을 잃을 미래의 자신을 의도적으로 속이기로 선택합니다.
+          하지만 전화 상대가 누구인지조차 관객에게 완전히 확정되어 있지 않습니다.
         </p>
-        <div class="memory-note">DECISION / 기억이 사라지기 전에 미래의 자신에게 거짓 단서를 남김</div>
+        <div class="memory-note">VOICE / 정보는 이어지지만 상대는 보이지 않음</div>
+        <div class="track-tag">B&W TRACK / FORWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="7">
       <div class="marker"><span class="dot"></span><span class="index">07</span></div>
       <div class="content">
-        <span class="meta">NATALIE</span>
-        <h2>나탈리는 레너드의 상태를 이해하고 그를 이용합니다.</h2>
+        <span class="meta">COLOR / ACTION BEFORE CAUSE</span>
+        <h2>도망치고 쫓는 행동의 이유를 관객은 나중에 알게 됩니다.</h2>
         <p class="body">
-          지미와 연결되어 있던 나탈리는 레너드가 몇 분 뒤 대화를 잊는다는 사실을 알게 됩니다.
-          그녀는 그 약점을 이용하기도 하고, 동시에 그에게 필요한 정보를 제공하기도 합니다.
-          레너드는 매 순간 새로 시작되는 관계 속에서 그녀를 믿을지 의심할지 결정해야 합니다.
+          도드와의 충돌처럼 컬러 장면에서는 행동이 먼저 등장합니다.
+          왜 레너드가 그 장소에 있고, 왜 누군가를 쫓거나 피하는지 설명은 한 장면 뒤가 아니라
+          시간상 더 이전에 놓인 다음 컬러 장면에서 뒤늦게 주어집니다.
         </p>
         <p class="sub">
-          같은 사람이 몇 분 사이에 적과 동료로 바뀌어 보이는 이유는 관계가 변해서가 아니라, 레너드의 기억이 사라지기 때문입니다.
+          관객은 원인을 찾기 위해 계속 다음 장면을 보지만, 영화 속 시간은 계속 과거로 이동합니다.
         </p>
-        <div class="memory-note">RELATIONSHIP / 감정보다 남겨진 기록이 관계를 결정함</div>
+        <div class="memory-note">CAUSE / 행동은 선명하지만 원인은 뒤늦게 복구됨</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="8">
       <div class="marker"><span class="dot"></span><span class="index">08</span></div>
       <div class="content">
-        <span class="meta">THE CLUE</span>
-        <h2>테디의 차량 번호가 새로운 ‘사실’이 됩니다.</h2>
+        <span class="meta">B&W / FACTS</span>
+        <h2>레너드는 기억보다 기록을 믿는다고 반복합니다.</h2>
         <p class="body">
-          나탈리의 도움으로 레너드는 자신이 남겨둔 차량 번호를 추적합니다.
-          기록은 다시 하나의 결론으로 이어지고, 레너드는 그 번호의 주인을 자신이 찾아야 할 인물이라고 받아들입니다.
-          그 기록을 왜 남겼는지는 이미 기억하지 못합니다.
+          사진, 메모, 문신은 레너드에게 객관적인 사실처럼 기능합니다.
+          기억은 왜곡될 수 있지만 기록은 남는다는 믿음이 그의 행동 기준이 됩니다.
         </p>
         <p class="sub">
-          과거의 자신이 만든 거짓말이 현재의 자신에게는 완벽한 객관적 사실처럼 작동합니다.
+          문제는 기록도 결국 누군가의 선택으로 만들어진다는 점입니다.
         </p>
-        <div class="memory-note">FACT / 출처를 잊은 기록은 절대적인 진실처럼 보임</div>
+        <div class="memory-note">FACT / 기록의 출처를 잊으면 기록 자체가 진실이 됨</div>
+        <div class="track-tag">B&W TRACK / FORWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="9">
       <div class="marker"><span class="dot"></span><span class="index">09</span></div>
       <div class="content">
-        <span class="meta">THE PRESENT</span>
-        <h2>레너드는 테디를 자신의 목표로 확신합니다.</h2>
+        <span class="meta">COLOR / TEDDY</span>
+        <h2>테디의 말은 장면이 거슬러 갈수록 다른 의미로 들립니다.</h2>
         <p class="body">
-          사진, 메모, 문신이 하나의 방향을 가리키자 레너드는 테디를 범인이라고 믿습니다.
-          그 믿음이 어떻게 만들어졌는지는 기억하지 못하지만, 기록만 보면 의심할 이유가 없습니다.
-          그는 자신이 직접 만들어낸 단서를 따라 마지막 행동으로 향합니다.
+          테디가 거짓말을 하는지, 레너드를 돕고 있는지, 이용하는지에 대한 판단은 계속 바뀝니다.
+          같은 인물의 같은 행동도 관객이 가진 정보의 양에 따라 전혀 다른 의미가 됩니다.
         </p>
         <p class="sub">
-          관객이 영화 초반에 보았던 사건이 실제 시간 순서에서는 이 이야기의 마지막에 놓입니다.
+          영화는 새로운 사실을 보여주는 동시에 이전의 확신을 계속 지웁니다.
         </p>
-        <div class="memory-note">PRESENT / 결과가 다시 새로운 원인처럼 작동함</div>
+        <div class="memory-note">INTERPRETATION / 정보가 늘어날수록 확신은 오히려 흔들림</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
       </div>
     </article>
 
-    <article class="chapter">
+    <article class="chapter" data-chapter="10">
       <div class="marker"><span class="dot"></span><span class="index">10</span></div>
       <div class="content">
-        <span class="meta">END / LOOP</span>
-        <h2>레너드는 테디를 살해합니다.</h2>
+        <span class="meta">B&W / CONVERGENCE</span>
+        <h2>흑백의 정방향 시간과 컬러의 역방향 시간이 같은 지점에 가까워집니다.</h2>
         <p class="body">
-          그는 자신의 기록을 믿고 테디를 죽입니다.
-          영화는 여기서 사건을 끝내지만, 레너드의 구조는 끝나지 않습니다.
-          시간이 조금 지나면 그는 다시 자신이 무엇을 했는지 잊을 것이고,
-          남겨진 기록은 또 다른 현재의 출발점이 됩니다.
+          지금까지 앞으로 진행되던 흑백 장면은 컬러 시퀀스의 가장 오래된 원인에 가까워지고,
+          뒤로 진행되던 컬러 장면도 같은 지점을 향합니다.
         </p>
         <p class="sub">
-          메멘토의 비극은 단순히 기억을 잃는 데 있지 않습니다.
-          기억 대신 믿기로 한 ‘사실’조차 자신이 만들어낼 수 있다는 데 있습니다.
+          두 개의 시간은 서로 반대 방향으로 움직였지만 결국 하나의 현재를 공유하게 됩니다.
         </p>
-        <div class="memory-note">LOOP / 기억은 사라져도 선택의 결과는 남음</div>
+        <div class="memory-note">TIME / FORWARD + BACKWARD → PRESENT</div>
+        <div class="track-tag">B&W TRACK / FORWARD</div>
+      </div>
+    </article>
+
+    <article class="chapter" data-chapter="11">
+      <div class="marker"><span class="dot"></span><span class="index">11</span></div>
+      <div class="content">
+        <span class="meta">COLOR / JIMMY</span>
+        <h2>지미 그랜츠의 사건이 이전 장면들의 의미를 다시 바꿉니다.</h2>
+        <p class="body">
+          레너드는 자신이 찾던 목표에 도달했다고 믿지만,
+          테디의 설명은 그 믿음 자체가 이미 반복된 것일 수 있음을 드러냅니다.
+          복수가 끝났다는 사실조차 레너드에게는 오래 남지 않습니다.
+        </p>
+        <p class="sub">
+          진실을 얻는 순간과 그 진실을 잊는 순간 사이의 간격이 매우 짧습니다.
+        </p>
+        <div class="memory-note">REWRITE / 새로운 사실이 이전 기억 전체를 덮어씀</div>
+        <div class="track-tag">COLOR TRACK / BACKWARD</div>
+      </div>
+    </article>
+
+    <article class="chapter" data-chapter="12">
+      <div class="marker"><span class="dot"></span><span class="index">12</span></div>
+      <div class="content">
+        <span class="meta">B&W → COLOR</span>
+        <h2>흑백이 컬러로 바뀌며 두 시간축이 하나가 됩니다.</h2>
+        <p class="body">
+          영화에서 가장 중요한 구조적 전환입니다.
+          정방향으로 쌓여온 흑백 시간과 역방향으로 거슬러 온 컬러 시간이 같은 순간에 도착합니다.
+          관객은 처음으로 두 흐름이 사실 하나의 사건을 양쪽에서 향하고 있었다는 사실을 체감합니다.
+        </p>
+        <p class="sub">
+          색의 변화는 단순한 스타일 변화가 아니라 두 시간 구조가 접합되는 표시입니다.
+        </p>
+        <div class="memory-note">MERGE / 두 개의 시간, 하나의 현재</div>
+        <div class="track-tag">TRACKS MERGED</div>
+      </div>
+    </article>
+
+    <article class="chapter" data-chapter="13">
+      <div class="marker"><span class="dot"></span><span class="index">13</span></div>
+      <div class="content">
+        <span class="meta">CHOICE / MEMORY AS A TOOL</span>
+        <h2>레너드는 기억을 잃기 전에 미래의 자신을 위한 사실을 만듭니다.</h2>
+        <p class="body">
+          테디의 말을 받아들이면 자신이 살아온 목적이 무너질 수 있습니다.
+          레너드는 그 진실을 그대로 남기지 않고, 미래의 자신이 다시 추적할 목표를 만들어냅니다.
+          기록은 기억을 보완하는 도구에서 새로운 현실을 만드는 도구로 바뀝니다.
+        </p>
+        <p class="sub">
+          영화의 첫 장면에서 보았던 결과는 이제 전혀 다른 의미를 갖게 됩니다.
+        </p>
+        <div class="memory-note">CHOICE / 기억이 사라지기 전에 어떤 사실을 남길 것인가</div>
+        <div class="track-tag">PRESENT / LOOP READY</div>
       </div>
     </article>
 
@@ -453,11 +706,11 @@
 
   <section class="final">
     <div class="final-inner">
-      <small>FINAL QUESTION / CHRONOLOGICAL MEMORY</small>
-      <h3>시간을 바로 세워도,<br>진실은 더 선명해졌나요?</h3>
+      <small>FINAL QUESTION / MEMORY ON FILM</small>
+      <h3>기억을 기록하면,<br>그 기록은 진실이 될까요?</h3>
       <p>
-        사건을 시간 순서대로 정리하면 무엇이 먼저 일어났는지는 알 수 있습니다.
-        하지만 레너드가 무엇을 사실이라고 믿었는지, 그리고 그 믿음이 어디서 시작됐는지는 여전히 흔들립니다.
+        필름은 장면을 남기고, 문신은 사실을 남깁니다.
+        하지만 무엇을 찍고 무엇을 새길지 결정하는 순간부터 기록은 이미 선택의 결과가 됩니다.
       </p>
     </div>
   </section>
@@ -466,21 +719,29 @@
 <script>
 (() => {
   const root=document.documentElement;
+  const tattooItems=[...document.querySelectorAll("[data-threshold]")];
   let raf=0;
 
   function render(){
     raf=0;
     const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
     const p=Math.max(0,Math.min(1,scrollY/max));
-    root.style.setProperty("--progress",(p*100).toFixed(2)+"%");
+    root.style.setProperty("--progress",p.toFixed(5));
+
+    tattooItems.forEach(el=>{
+      const threshold=parseFloat(el.dataset.threshold || "0");
+      el.classList.toggle("show",p>=threshold);
+    });
   }
 
   addEventListener("scroll",()=>{
     if(!raf) raf=requestAnimationFrame(render);
   },{passive:true});
+
   addEventListener("resize",render);
   render();
 })();
 </script>
+
 </body>
 </html>
