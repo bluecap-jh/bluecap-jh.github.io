@@ -23,7 +23,7 @@
   /* One parent-owned finite timeline */
   #scrollSpace{
     width:100%;
-    height:8215vh;
+    height:8565vh;
     background:#000;
   }
 
@@ -97,12 +97,6 @@
     will-change:opacity,transform;
   }
 
-  .cover-kicker{
-    margin-bottom:24px;
-    font-size:10px;
-    letter-spacing:.24em;
-    color:rgba(255,255,255,.34);
-  }
 
   .cover-title{
     margin:0;
@@ -144,19 +138,36 @@
     color:rgba(255,255,255,.18);
   }
 
+  .cover-invite-screen{
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    opacity:0;
+    transform:translateY(16px);
+    will-change:opacity,transform;
+  }
+
+  .cover-invite-wrap{
+    width:min(760px,84vw);
+    text-align:center;
+  }
+
   .cover-invite{
-    margin-top:54px;
+    margin:0;
     font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
-    font-size:clamp(17px,1.7vw,22px);
-    letter-spacing:-.025em;
-    color:rgba(255,255,255,.88);
+    font-size:clamp(22px,2.25vw,34px);
+    line-height:1.45;
+    letter-spacing:-.03em;
+    font-weight:400;
+    color:rgba(255,255,255,.92);
   }
 
   .cover-scroll{
-    margin-top:20px;
+    margin-top:26px;
     font-size:9px;
     letter-spacing:.22em;
-    color:rgba(255,255,255,.20);
+    color:rgba(255,255,255,.22);
   }
 
   @media(max-width:680px){
@@ -167,7 +178,6 @@
       line-height:1.9;
     }
     .cover-films span:not(:last-child)::after{display:none}
-    .cover-invite{margin-top:44px}
   }
 
   /*
@@ -201,11 +211,10 @@
 
 <section id="coverLayer" aria-label="작품 소개">
   <div class="cover-inner" id="coverInner">
-    <div class="cover-kicker">WELCOME / CHRISTOPHER NOLAN · TIME STUDY</div>
     <h1 class="cover-title">ARCHITECTURE OF TIME</h1>
     <p class="cover-copy">
-      크리스토퍼 놀란 감독의 영화 중 촬영 기법 또는 이야기의 구조가
-      ‘시간’과 밀접하게 연결된 네 작품을 골라 하나의 스크롤 경험으로 구성했습니다.
+      크리스토퍼 놀란 감독의 영화 중 촬영 기법 또는 이야기의 구조가 ‘시간’과 밀접하게<br>
+      연결된 네 작품을 골라 하나의 스크롤 경험으로 구성했습니다.
     </p>
     <div class="cover-films" aria-label="소개 작품">
       <span>INTERSTELLAR</span>
@@ -213,8 +222,13 @@
       <span>DUNKIRK</span>
       <span>MEMENTO</span>
     </div>
-    <div class="cover-invite">그러면, 한번 체험해 보실까요?</div>
-    <div class="cover-scroll">SCROLL TO BEGIN</div>
+  </div>
+
+  <div class="cover-invite-screen" id="coverInviteScreen">
+    <div class="cover-invite-wrap">
+      <div class="cover-invite">그러면, 한번 체험해 보실까요?</div>
+      <div class="cover-scroll">SCROLL TO BEGIN</div>
+    </div>
   </div>
 </section>
 
@@ -266,63 +280,68 @@
   /*
     One continuous parent-owned timeline.
 
-      0–300       FRONT COVER
-      300–470     cover copy fades into black
-      470–600     full black hold
-      600–785     INTERSTELLAR emerges from black
+      0–300       FRONT COVER / title + introduction
+      300–430     first cover fades out
+      430–650     invitation appears as a separate screen
+      650–820     invitation fades into black
+      820–950     full black hold
+      950–1135    INTERSTELLAR emerges from black
 
-      785–1865    INTERSTELLAR
-      1865–1955   hold final INTERSTELLAR frame
-      1955–2125   fade INTERSTELLAR into black
-      2125–2265   full black hold
-      2265–2450   TENET emerges from black
-      2450–3590   TENET
+      1135–2215   INTERSTELLAR
+      2215–2305   hold final INTERSTELLAR frame
+      2305–2475   fade INTERSTELLAR into black
+      2475–2615   full black hold
+      2615–2800   TENET emerges from black
+      2800–3940   TENET
 
-      3590–3680   hold final TENET frame
-      3680–3850   fade TENET into black
-      3850–3990   full black hold
-      3990–4175   DUNKIRK emerges from black
-      4175–5135   DUNKIRK
+      3940–4030   hold final TENET frame
+      4030–4200   fade TENET into black
+      4200–4340   full black hold
+      4340–4525   DUNKIRK emerges from black
+      4525–5485   DUNKIRK
 
-      5135–5225   hold final DUNKIRK frame
-      5225–5395   fade DUNKIRK into black
-      5395–5535   full black hold
-      5535–5720   MEMENTO emerges from black
-      5720–7535   MEMENTO
+      5485–5575   hold final DUNKIRK frame
+      5575–5745   fade DUNKIRK into black
+      5745–5885   full black hold
+      5885–6070   MEMENTO emerges from black
+      6070–7885   MEMENTO
 
-      7535–7625   hold final MEMENTO frame
-      7625–7935   BACK COVER / slow fade to black
-      7935–8115   full black ending
+      7885–7975   hold final MEMENTO frame
+      7975–8285   BACK COVER / slow fade to black
+      8285–8465   full black ending
   */
   const T = {
-    coverTextFadeStart:300,
-    coverTextFadeEnd:470,
-    coverBlackHoldEnd:600,
-    interFadeInEnd:785,
+    coverIntroHoldEnd:300,
+    coverIntroFadeEnd:430,
+    coverInviteHoldEnd:650,
+    coverInviteFadeEnd:820,
+    coverBlackHoldEnd:950,
+    interFadeInEnd:1135,
 
-    interEnd:1865,
-    interHoldEnd:1955,
-    interFadeOutEnd:2125,
-    interBlackHoldEnd:2265,
-    tenetFadeInEnd:2450,
-    tenetEnd:3590,
-    tenetHoldEnd:3680,
-    tenetFadeOutEnd:3850,
-    tenetBlackHoldEnd:3990,
-    dunkirkFadeInEnd:4175,
-    dunkirkEnd:5135,
-    dunkirkHoldEnd:5225,
-    dunkirkFadeOutEnd:5395,
-    dunkirkBlackHoldEnd:5535,
-    mementoFadeInEnd:5720,
-    mementoEnd:7535,
-    mementoHoldEnd:7625,
-    mementoFadeOutEnd:7935,
-    outroBlackEnd:8115
+    interEnd:2215,
+    interHoldEnd:2305,
+    interFadeOutEnd:2475,
+    interBlackHoldEnd:2615,
+    tenetFadeInEnd:2800,
+    tenetEnd:3940,
+    tenetHoldEnd:4030,
+    tenetFadeOutEnd:4200,
+    tenetBlackHoldEnd:4340,
+    dunkirkFadeInEnd:4525,
+    dunkirkEnd:5485,
+    dunkirkHoldEnd:5575,
+    dunkirkFadeOutEnd:5745,
+    dunkirkBlackHoldEnd:5885,
+    mementoFadeInEnd:6070,
+    mementoEnd:7885,
+    mementoHoldEnd:7975,
+    mementoFadeOutEnd:8285,
+    outroBlackEnd:8465
   };
 
   const coverLayer = document.getElementById('coverLayer');
   const coverInner = document.getElementById('coverInner');
+  const coverInviteScreen = document.getElementById('coverInviteScreen');
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
   const dunkirkLayer = document.getElementById('dunkirkLayer');
@@ -465,6 +484,8 @@
     let coverOpacity=0;
     let coverInnerOpacity=0;
     let coverInnerY=0;
+    let coverInviteOpacity=0;
+    let coverInviteY=16;
 
     let interP=0;
     let tenetP=0;
@@ -493,21 +514,42 @@
     let mementoScale=1.012;
 
     /* ---------- FRONT COVER ---------- */
-    if(yVh < T.coverTextFadeStart){
+    if(yVh < T.coverIntroHoldEnd){
       coverOpacity=1;
       coverInnerOpacity=1;
+      coverInviteOpacity=0;
 
-    }else if(yVh < T.coverTextFadeEnd){
+    }else if(yVh < T.coverIntroFadeEnd){
       const p=smoother(
-        (yVh-T.coverTextFadeStart)/(T.coverTextFadeEnd-T.coverTextFadeStart)
+        (yVh-T.coverIntroHoldEnd)/(T.coverIntroFadeEnd-T.coverIntroHoldEnd)
       );
       coverOpacity=1;
       coverInnerOpacity=1-p;
       coverInnerY=-p*18;
+      coverInviteOpacity=0;
+
+    }else if(yVh < T.coverInviteHoldEnd){
+      const p=smoother(
+        (yVh-T.coverIntroFadeEnd)/(T.coverInviteHoldEnd-T.coverIntroFadeEnd)
+      );
+      coverOpacity=1;
+      coverInnerOpacity=0;
+      coverInviteOpacity=p;
+      coverInviteY=(1-p)*16;
+
+    }else if(yVh < T.coverInviteFadeEnd){
+      const p=smoother(
+        (yVh-T.coverInviteHoldEnd)/(T.coverInviteFadeEnd-T.coverInviteHoldEnd)
+      );
+      coverOpacity=1;
+      coverInnerOpacity=0;
+      coverInviteOpacity=1-p;
+      coverInviteY=-p*14;
 
     }else if(yVh < T.coverBlackHoldEnd){
       coverOpacity=1;
       coverInnerOpacity=0;
+      coverInviteOpacity=0;
 
     }else if(yVh < T.interFadeInEnd){
       const p=smoother(
@@ -515,6 +557,7 @@
       );
       coverOpacity=1-p;
       coverInnerOpacity=0;
+      coverInviteOpacity=0;
       interP=0;
       interOpacity=p;
       interBrightness=.72+p*.28;
@@ -690,6 +733,8 @@
     coverLayer.style.opacity=coverOpacity.toFixed(4);
     coverInner.style.opacity=coverInnerOpacity.toFixed(4);
     coverInner.style.transform='translateY('+coverInnerY.toFixed(2)+'px)';
+    coverInviteScreen.style.opacity=coverInviteOpacity.toFixed(4);
+    coverInviteScreen.style.transform='translateY('+coverInviteY.toFixed(2)+'px)';
 
     interLayer.style.opacity=interOpacity.toFixed(4);
     interLayer.style.filter=
