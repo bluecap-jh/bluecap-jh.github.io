@@ -23,7 +23,7 @@
   /* One parent-owned finite timeline */
   #scrollSpace{
     width:100%;
-    height:6850vh;
+    height:8215vh;
     background:#000;
   }
 
@@ -41,7 +41,7 @@
 
   #interstellarLayer{
     z-index:2;
-    opacity:1;
+    opacity:0;
     filter:brightness(1) blur(0px);
   }
 
@@ -75,6 +75,100 @@
     pointer-events:none;
   }
 
+  /* ---------- FRONT COVER ---------- */
+  #coverLayer{
+    position:fixed;
+    inset:0;
+    z-index:7;
+    display:grid;
+    place-items:center;
+    background:#000;
+    color:#f2f2ef;
+    pointer-events:none;
+    opacity:1;
+    will-change:opacity;
+  }
+
+  .cover-inner{
+    width:min(860px,84vw);
+    text-align:center;
+    transform:translateY(0);
+    opacity:1;
+    will-change:opacity,transform;
+  }
+
+  .cover-kicker{
+    margin-bottom:24px;
+    font-size:10px;
+    letter-spacing:.24em;
+    color:rgba(255,255,255,.34);
+  }
+
+  .cover-title{
+    margin:0;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:clamp(42px,6.2vw,84px);
+    line-height:.96;
+    font-weight:500;
+    letter-spacing:-.055em;
+  }
+
+  .cover-copy{
+    width:min(700px,82vw);
+    margin:34px auto 0;
+    font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
+    font-size:15px;
+    line-height:1.8;
+    letter-spacing:-.025em;
+    color:rgba(255,255,255,.62);
+    word-break:keep-all;
+  }
+
+  .cover-films{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px 18px;
+    margin:34px auto 0;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.44);
+  }
+
+  .cover-films span:not(:last-child)::after{
+    content:"·";
+    display:inline-block;
+    margin-left:18px;
+    color:rgba(255,255,255,.18);
+  }
+
+  .cover-invite{
+    margin-top:54px;
+    font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
+    font-size:clamp(17px,1.7vw,22px);
+    letter-spacing:-.025em;
+    color:rgba(255,255,255,.88);
+  }
+
+  .cover-scroll{
+    margin-top:20px;
+    font-size:9px;
+    letter-spacing:.22em;
+    color:rgba(255,255,255,.20);
+  }
+
+  @media(max-width:680px){
+    .cover-inner{width:86vw}
+    .cover-copy{font-size:14px}
+    .cover-films{
+      max-width:290px;
+      line-height:1.9;
+    }
+    .cover-films span:not(:last-child)::after{display:none}
+    .cover-invite{margin-top:44px}
+  }
+
   /*
     This veil is the transition itself, not a separate "page".
     It rises over Interstellar, holds, then falls while TENET appears.
@@ -103,6 +197,25 @@
 <body>
 
 <div id="scrollSpace" aria-hidden="true"></div>
+
+<section id="coverLayer" aria-label="작품 소개">
+  <div class="cover-inner" id="coverInner">
+    <div class="cover-kicker">WELCOME / CHRISTOPHER NOLAN · TIME STUDY</div>
+    <h1 class="cover-title">TIME, AS CINEMA</h1>
+    <p class="cover-copy">
+      크리스토퍼 놀란 감독의 영화 중 촬영 기법 또는 이야기의 구조가
+      ‘시간’과 밀접하게 연결된 네 작품을 골라 하나의 스크롤 경험으로 구성했습니다.
+    </p>
+    <div class="cover-films" aria-label="소개 작품">
+      <span>INTERSTELLAR</span>
+      <span>TENET</span>
+      <span>DUNKIRK</span>
+      <span>MEMENTO</span>
+    </div>
+    <div class="cover-invite">그러면, 한번 체험해 보실까요?</div>
+    <div class="cover-scroll">SCROLL TO BEGIN</div>
+  </div>
+</section>
 
 <div class="project-layer" id="interstellarLayer">
   <iframe
@@ -152,46 +265,63 @@
   /*
     One continuous parent-owned timeline.
 
-      0–1080      INTERSTELLAR
-      1080–1170   hold final INTERSTELLAR frame
-      1170–1340   fade INTERSTELLAR into black
-      1340–1480   full black hold
-      1480–1665   TENET emerges from black
-      1665–2805   TENET
+      0–300       FRONT COVER
+      300–470     cover copy fades into black
+      470–600     full black hold
+      600–785     INTERSTELLAR emerges from black
 
-      2805–2895   hold final TENET frame
-      2895–3065   fade TENET into black
-      3065–3205   full black hold
-      3205–3390   DUNKIRK emerges from black
-      3390–4350   DUNKIRK
+      785–1865    INTERSTELLAR
+      1865–1955   hold final INTERSTELLAR frame
+      1955–2125   fade INTERSTELLAR into black
+      2125–2265   full black hold
+      2265–2450   TENET emerges from black
+      2450–3590   TENET
 
-      4350–4440   hold final DUNKIRK frame
-      4440–4610   fade DUNKIRK into black
-      4610–4750   full black hold
-      4750–4935   MEMENTO emerges from black
-      4935–6750   MEMENTO
+      3590–3680   hold final TENET frame
+      3680–3850   fade TENET into black
+      3850–3990   full black hold
+      3990–4175   DUNKIRK emerges from black
+      4175–5135   DUNKIRK
 
-    Every bridge uses the same 90 / 170 / 140 / 185vh cinematic rhythm.
+      5135–5225   hold final DUNKIRK frame
+      5225–5395   fade DUNKIRK into black
+      5395–5535   full black hold
+      5535–5720   MEMENTO emerges from black
+      5720–7535   MEMENTO
+
+      7535–7625   hold final MEMENTO frame
+      7625–7935   BACK COVER / slow fade to black
+      7935–8115   full black ending
   */
   const T = {
-    interEnd:1080,
-    interHoldEnd:1170,
-    interFadeOutEnd:1340,
-    interBlackHoldEnd:1480,
-    tenetFadeInEnd:1665,
-    tenetEnd:2805,
-    tenetHoldEnd:2895,
-    tenetFadeOutEnd:3065,
-    tenetBlackHoldEnd:3205,
-    dunkirkFadeInEnd:3390,
-    dunkirkEnd:4350,
-    dunkirkHoldEnd:4440,
-    dunkirkFadeOutEnd:4610,
-    dunkirkBlackHoldEnd:4750,
-    mementoFadeInEnd:4935,
-    mementoEnd:6750
+    coverTextFadeStart:300,
+    coverTextFadeEnd:470,
+    coverBlackHoldEnd:600,
+    interFadeInEnd:785,
+
+    interEnd:1865,
+    interHoldEnd:1955,
+    interFadeOutEnd:2125,
+    interBlackHoldEnd:2265,
+    tenetFadeInEnd:2450,
+    tenetEnd:3590,
+    tenetHoldEnd:3680,
+    tenetFadeOutEnd:3850,
+    tenetBlackHoldEnd:3990,
+    dunkirkFadeInEnd:4175,
+    dunkirkEnd:5135,
+    dunkirkHoldEnd:5225,
+    dunkirkFadeOutEnd:5395,
+    dunkirkBlackHoldEnd:5535,
+    mementoFadeInEnd:5720,
+    mementoEnd:7535,
+    mementoHoldEnd:7625,
+    mementoFadeOutEnd:7935,
+    outroBlackEnd:8115
   };
 
+  const coverLayer = document.getElementById('coverLayer');
+  const coverInner = document.getElementById('coverInner');
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
   const dunkirkLayer = document.getElementById('dunkirkLayer');
@@ -331,6 +461,10 @@
     raf=0;
     const yVh=(window.scrollY/Math.max(innerHeight,1))*100;
 
+    let coverOpacity=0;
+    let coverInnerOpacity=0;
+    let coverInnerY=0;
+
     let interP=0;
     let tenetP=0;
     let dunkirkP=0;
@@ -357,9 +491,40 @@
     let mementoBlur=5;
     let mementoScale=1.012;
 
+    /* ---------- FRONT COVER ---------- */
+    if(yVh < T.coverTextFadeStart){
+      coverOpacity=1;
+      coverInnerOpacity=1;
+
+    }else if(yVh < T.coverTextFadeEnd){
+      const p=smoother(
+        (yVh-T.coverTextFadeStart)/(T.coverTextFadeEnd-T.coverTextFadeStart)
+      );
+      coverOpacity=1;
+      coverInnerOpacity=1-p;
+      coverInnerY=-p*18;
+
+    }else if(yVh < T.coverBlackHoldEnd){
+      coverOpacity=1;
+      coverInnerOpacity=0;
+
+    }else if(yVh < T.interFadeInEnd){
+      const p=smoother(
+        (yVh-T.coverBlackHoldEnd)/(T.interFadeInEnd-T.coverBlackHoldEnd)
+      );
+      coverOpacity=1-p;
+      coverInnerOpacity=0;
+      interP=0;
+      interOpacity=p;
+      interBrightness=.72+p*.28;
+      interBlur=(1-p)*5;
+
     /* ---------- INTERSTELLAR ---------- */
-    if(yVh < T.interEnd){
-      interP=clamp(yVh/T.interEnd,0,1);
+    }else if(yVh < T.interEnd){
+      interP=clamp(
+        (yVh-T.interFadeInEnd)/(T.interEnd-T.interFadeInEnd),
+        0,1
+      );
       interOpacity=1;
 
     }else if(yVh < T.interHoldEnd){
@@ -477,17 +642,53 @@
       mementoScale=1.012-p*.012;
 
     /* ---------- MEMENTO ---------- */
-    }else{
+    }else if(yVh < T.mementoEnd){
       interP=1;
       tenetP=1;
       dunkirkP=1;
       mementoP=clamp((yVh-T.mementoFadeInEnd)/(T.mementoEnd-T.mementoFadeInEnd),0,1);
       mementoOpacity=1;
-      veilOpacity=0;
       mementoBrightness=1;
       mementoBlur=0;
       mementoScale=1;
+
+    }else if(yVh < T.mementoHoldEnd){
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      mementoP=1;
+      mementoOpacity=1;
+      mementoBrightness=1;
+      mementoBlur=0;
+      mementoScale=1;
+
+    /* ---------- BACK COVER / FADE TO BLACK ---------- */
+    }else if(yVh < T.mementoFadeOutEnd){
+      const p=smoother(
+        (yVh-T.mementoHoldEnd)/(T.mementoFadeOutEnd-T.mementoHoldEnd)
+      );
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      mementoP=1;
+      mementoOpacity=1-p*.98;
+      mementoBrightness=1-p*.72;
+      mementoBlur=p*4.5;
+      mementoScale=1;
+      veilOpacity=p;
+
+    }else{
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      mementoP=1;
+      mementoOpacity=0;
+      veilOpacity=1;
     }
+
+    coverLayer.style.opacity=coverOpacity.toFixed(4);
+    coverInner.style.opacity=coverInnerOpacity.toFixed(4);
+    coverInner.style.transform='translateY('+coverInnerY.toFixed(2)+'px)';
 
     interLayer.style.opacity=interOpacity.toFixed(4);
     interLayer.style.filter=
