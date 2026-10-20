@@ -24,7 +24,7 @@
     overflow-x:hidden;
   }
 
-  /* ---------- FILM BACKGROUND / REDESIGN ---------- */
+  /* ---------- WIDE FILM BACKGROUND ---------- */
   .film-bg{
     position:fixed;
     inset:0;
@@ -35,29 +35,35 @@
 
   .film-strip{
     position:absolute;
-    top:-24vh;
-    bottom:-24vh;
-    width:168px;
-    border-left:1px solid rgba(255,255,255,.42);
-    border-right:1px solid rgba(255,255,255,.42);
+    left:50%;
+    top:-82vh;
+    width:min(620px,54vw);
+    height:285vh;
+    transform:
+      translateX(-50%)
+      translateY(var(--film-shift))
+      rotate(-1.8deg);
+    opacity:.36;
+    border-left:1px solid rgba(255,255,255,.46);
+    border-right:1px solid rgba(255,255,255,.46);
     box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.15),
-      inset 0 0 34px rgba(255,255,255,.045);
+      inset 0 0 0 1px rgba(255,255,255,.12),
+      inset 0 0 48px rgba(255,255,255,.035);
     background:
       linear-gradient(
         to right,
-        rgba(255,255,255,.10) 0 16px,
-        rgba(255,255,255,.028) 16px calc(100% - 16px),
-        rgba(255,255,255,.10) calc(100% - 16px) 100%
+        rgba(255,255,255,.085) 0 28px,
+        rgba(255,255,255,.024) 28px calc(100% - 28px),
+        rgba(255,255,255,.085) calc(100% - 28px) 100%
       ),
       repeating-linear-gradient(
         to bottom,
-        rgba(255,255,255,.028) 0 108px,
-        rgba(255,255,255,.16) 108px 110px,
-        rgba(255,255,255,.018) 110px 218px,
-        rgba(255,255,255,.13) 218px 220px
-      ),
-      rgba(255,255,255,.010);
+        rgba(255,255,255,.018) 0 178px,
+        rgba(255,255,255,.18) 178px 180px,
+        rgba(255,255,255,.012) 180px 358px,
+        rgba(255,255,255,.14) 358px 360px
+      );
+    will-change:transform;
   }
 
   .film-strip::before,
@@ -66,203 +72,83 @@
     position:absolute;
     top:0;
     bottom:0;
-    width:16px;
+    width:22px;
     background:
       repeating-linear-gradient(
         to bottom,
-        transparent 0 7px,
-        rgba(255,255,255,.56) 7px 25px,
-        transparent 25px 42px
+        transparent 0 10px,
+        rgba(255,255,255,.58) 10px 32px,
+        transparent 32px 52px
       );
-    opacity:1;
+    opacity:.92;
   }
-  .film-strip::before{left:0}
-  .film-strip::after{right:0}
+  .film-strip::before{left:2px}
+  .film-strip::after{right:2px}
 
   .film-core{
     position:absolute;
-    inset:0 20px;
+    inset:0 32px;
     background:
       repeating-linear-gradient(
         to bottom,
-        transparent 0 106px,
-        rgba(255,255,255,.16) 106px 108px,
-        transparent 108px 216px,
-        rgba(255,255,255,.12) 216px 218px
+        transparent 0 176px,
+        rgba(255,255,255,.14) 176px 178px,
+        transparent 178px 356px,
+        rgba(255,255,255,.11) 356px 358px
       );
   }
 
-  .film-core::before{
-    content:"";
+  .film-scratch{
     position:absolute;
-    left:10%;
-    right:10%;
-    top:0;
-    bottom:0;
+    inset:0 34px;
+    opacity:.40;
     background:
+      linear-gradient(
+        92deg,
+        transparent 0 15%,
+        rgba(255,255,255,.11) 15.2%,
+        transparent 15.5% 62%,
+        rgba(255,255,255,.08) 62.2%,
+        transparent 62.45%
+      ),
       repeating-linear-gradient(
         to bottom,
-        transparent 0 18px,
-        rgba(255,255,255,.028) 18px 88px,
-        transparent 88px 110px
+        transparent 0 74px,
+        rgba(255,255,255,.045) 74px 75px,
+        transparent 75px 149px
       );
   }
 
   .film-copy{
     position:absolute;
-    inset:0 22px;
+    inset:0 42px;
     display:flex;
     flex-direction:column;
     justify-content:space-around;
-    align-items:center;
-    padding:7vh 0;
-    color:rgba(255,255,255,.56);
+    gap:78px;
+    padding:9vh 0;
     font-family:Georgia,"Times New Roman",serif;
-    font-size:10px;
-    line-height:1.25;
-    letter-spacing:.16em;
     text-align:center;
-    text-transform:uppercase;
-    overflow:hidden;
     pointer-events:none;
   }
 
   .film-copy span{
-    display:block;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:138px;
     width:100%;
-    padding:10px 4px;
-    border-top:1px solid rgba(255,255,255,.11);
-    border-bottom:1px solid rgba(255,255,255,.08);
-    transform:rotate(-90deg);
+    padding:18px 30px;
+    border-top:1px solid rgba(255,255,255,.13);
+    border-bottom:1px solid rgba(255,255,255,.10);
+    color:rgba(255,255,255,.60);
+    font-size:clamp(14px,1.35vw,19px);
+    line-height:1.4;
+    letter-spacing:.10em;
+    text-transform:uppercase;
     white-space:nowrap;
-    opacity:.78;
-    text-shadow:0 0 6px rgba(255,255,255,.06);
+    text-shadow:0 0 7px rgba(255,255,255,.05);
   }
-
-  .film-strip.center .film-copy span{
-    transform:rotate(90deg);
-    opacity:.58;
-  }
-
-  .film-strip.left{
-    left:-10px;
-    opacity:.46;
-    transform:rotate(-3.5deg) translateY(var(--film-shift));
-  }
-
-  .film-strip.center{
-    left:50%;
-    margin-left:-84px;
-    opacity:.20;
-    transform:translateX(-50%) translateY(calc(var(--film-shift) * -.55));
-  }
-
-  .film-strip.right{
-    right:-12px;
-    opacity:.40;
-    transform:rotate(4deg) translateY(calc(var(--film-shift) * -1.05));
-  }
-
-  /* ---------- MEMORY PHRASES / FILM-SCRATCH LAYER ---------- */
-  .tattoo-layer{
-    position:fixed;
-    inset:0;
-    z-index:2;
-    pointer-events:none;
-    mix-blend-mode:screen;
-    overflow:hidden;
-  }
-
-  .memory-zone{
-    position:absolute;
-    top:0;
-    bottom:0;
-    width:26vw;
-    max-width:390px;
-  }
-  .memory-zone.left-zone{left:0}
-  .memory-zone.right-zone{right:0}
-
-  .tattoo{
-    position:absolute;
-    width:max-content;
-    max-width:22vw;
-    opacity:0;
-    font-family:Georgia,"Times New Roman",serif;
-    font-style:italic;
-    font-weight:500;
-    letter-spacing:.045em;
-    line-height:1.05;
-    color:rgba(255,255,255,.70);
-    text-shadow:0 0 8px rgba(255,255,255,.05);
-    transition:opacity .65s ease, transform .75s ease;
-    -webkit-mask-image:
-      repeating-linear-gradient(
-        to bottom,
-        #000 0 6px,
-        rgba(0,0,0,.74) 6px 7px,
-        #000 7px 13px
-      );
-    mask-image:
-      repeating-linear-gradient(
-        to bottom,
-        #000 0 6px,
-        rgba(0,0,0,.74) 6px 7px,
-        #000 7px 13px
-      );
-  }
-
-  .tattoo::before,
-  .tattoo::after{
-    content:"";
-    position:absolute;
-    height:1px;
-    background:rgba(255,255,255,.28);
-    opacity:.52;
-  }
-  .tattoo::before{
-    width:42%;
-    top:33%;
-    left:-10%;
-    transform:rotate(-3deg);
-  }
-  .tattoo::after{
-    width:30%;
-    top:68%;
-    right:-8%;
-    transform:rotate(2deg);
-  }
-
-  .tattoo.show{opacity:.70}
-
-  .left-zone .tattoo{left:3.2vw;text-align:left}
-  .right-zone .tattoo{right:3.2vw;text-align:right}
-
-  .t1{top:10%;font-size:26px;transform:rotate(-6deg) translateY(8px)}
-  .t2{top:24%;font-size:21px;transform:rotate(5deg) translateY(8px)}
-  .t3{top:41%;font-size:29px;transform:rotate(-4deg) translateY(8px)}
-  .t4{top:60%;font-size:22px;transform:rotate(6deg) translateY(8px)}
-  .t5{top:79%;font-size:27px;transform:rotate(-5deg) translateY(8px)}
-
-  .t6{top:15%;font-size:22px;transform:rotate(4deg) translateY(8px)}
-  .t7{top:33%;font-size:28px;transform:rotate(-6deg) translateY(8px)}
-  .t8{top:52%;font-size:22px;transform:rotate(5deg) translateY(8px)}
-  .t9{top:70%;font-size:27px;transform:rotate(-4deg) translateY(8px)}
-  .t10{top:87%;font-size:21px;transform:rotate(5deg) translateY(8px)}
-
-  .tattoo.show{
-    transform:translateY(0);
-  }
-  .t1.show{transform:rotate(-6deg) translateY(0)}
-  .t2.show{transform:rotate(5deg) translateY(0)}
-  .t3.show{transform:rotate(-4deg) translateY(0)}
-  .t4.show{transform:rotate(6deg) translateY(0)}
-  .t5.show{transform:rotate(-5deg) translateY(0)}
-  .t6.show{transform:rotate(4deg) translateY(0)}
-  .t7.show{transform:rotate(-6deg) translateY(0)}
-  .t8.show{transform:rotate(5deg) translateY(0)}
-  .t9.show{transform:rotate(-4deg) translateY(0)}
-  .t10.show{transform:rotate(5deg) translateY(0)}
 
   /* ---------- MAIN ---------- */
   .page{
@@ -517,19 +403,33 @@
   }
 
   @media(max-width:980px){
-    .memory-zone{width:22vw}
-    .tattoo{max-width:19vw;font-size:16px!important}
-    .left-zone .tattoo{left:2vw}
-    .right-zone .tattoo{right:2vw}
-    .film-strip{opacity:.16}
-    .film-strip.center{display:none}
+    .film-strip{
+      width:min(520px,62vw);
+      opacity:.27;
+    }
+    .film-copy span{
+      font-size:13px;
+      white-space:normal;
+    }
   }
 
   @media(max-width:760px){
     .page{width:min(92vw,680px)}
-    .film-strip{width:88px;left:-26px!important}
-    .film-copy{inset:0 16px;font-size:8px}
-    .tattoo-layer{display:none}
+    .film-strip{
+      width:78vw;
+      left:50%!important;
+      opacity:.20;
+    }
+    .film-copy{
+      inset:0 34px;
+      gap:64px;
+    }
+    .film-copy span{
+      min-height:120px;
+      padding:14px 18px;
+      font-size:11px;
+      white-space:normal;
+    }
     .progress{display:none}
     .timeline::before{left:12px}
     .chapter{
@@ -555,55 +455,25 @@
 <body>
 
 <div class="film-bg" aria-hidden="true">
-  <div class="film-strip left">
+  <div class="film-strip">
     <span class="film-core"></span>
+    <span class="film-scratch"></span>
     <div class="film-copy">
       <span>REMEMBER SAMMY JANKIS</span>
-      <span>FACT 01 / MEMORY</span>
-      <span>DON'T TRUST</span>
+      <span>DON'T TRUST YOUR MEMORY</span>
       <span>PHOTO / NOTE / TATTOO</span>
-      <span>WHAT DID YOU FORGET?</span>
+      <span>WHO WROTE THE FACT?</span>
       <span>MEMORY IS UNRELIABLE</span>
-    </div>
-  </div>
-  <div class="film-strip center">
-    <span class="film-core"></span>
-    <div class="film-copy">
       <span>COLOR / BACKWARD</span>
       <span>B&amp;W / FORWARD</span>
       <span>CAUSE AFTER RESULT</span>
-      <span>WRITE IT DOWN</span>
-      <span>THE RECORD REMAINS</span>
-      <span>PRESENT / LOOP</span>
-    </div>
-  </div>
-  <div class="film-strip right">
-    <span class="film-core"></span>
-    <div class="film-copy">
-      <span>WHO WROTE THE FACT?</span>
-      <span>A MEMORY CAN CHANGE</span>
       <span>REMEMBER THE PHOTO</span>
       <span>YOU CHOOSE THE TRUTH</span>
       <span>DO NOT BELIEVE HIS LIES</span>
-      <span>WHAT REMAINS?</span>
+      <span>WHAT DID YOU FORGET?</span>
+      <span>THE RECORD REMAINS</span>
+      <span>PRESENT / LOOP</span>
     </div>
-  </div>
-</div>
-
-<div class="tattoo-layer" aria-hidden="true">
-  <div class="memory-zone left-zone">
-    <span class="tattoo t1" data-threshold=".08">Remember Sammy Jankis</span>
-    <span class="tattoo t2" data-threshold=".22">DON'T TRUST</span>
-    <span class="tattoo t3" data-threshold=".38">WHO WROTE THE FACT?</span>
-    <span class="tattoo t4" data-threshold=".54">MEMORY IS UNRELIABLE</span>
-    <span class="tattoo t5" data-threshold=".72">YOU CHOOSE THE TRUTH</span>
-  </div>
-  <div class="memory-zone right-zone">
-    <span class="tattoo t6" data-threshold=".14">FACT 01</span>
-    <span class="tattoo t7" data-threshold=".30">A MEMORY CAN CHANGE</span>
-    <span class="tattoo t8" data-threshold=".46">REMEMBER THE PHOTO</span>
-    <span class="tattoo t9" data-threshold=".63">WRITE IT DOWN</span>
-    <span class="tattoo t10" data-threshold=".82">WHAT DID YOU FORGET?</span>
   </div>
 </div>
 
@@ -870,7 +740,6 @@
 <script>
 (() => {
   const root=document.documentElement;
-  const tattooItems=[...document.querySelectorAll("[data-threshold]")];
   const chapterContents=[...document.querySelectorAll(".chapter .content")];
   let raf=0;
 
@@ -879,12 +748,7 @@
     const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
     const p=Math.max(0,Math.min(1,scrollY/max));
     root.style.setProperty("--progress",p.toFixed(5));
-    root.style.setProperty("--film-shift",(-p*760).toFixed(2)+"px");
-
-    tattooItems.forEach(el=>{
-      const threshold=parseFloat(el.dataset.threshold || "0");
-      el.classList.toggle("show",p>=threshold);
-    });
+    root.style.setProperty("--film-shift",(-p*1320).toFixed(2)+"px");
 
     /*
       Exact scroll focus:
