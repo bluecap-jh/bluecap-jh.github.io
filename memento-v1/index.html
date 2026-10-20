@@ -306,6 +306,48 @@
 
 
 
+  .portrait-break{
+    position:relative;
+    z-index:4;
+    min-height:118vh;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    opacity:0;
+    will-change:opacity,transform;
+  }
+
+  .portrait-break::before,
+  .portrait-break::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    height:22vh;
+    z-index:2;
+    pointer-events:none;
+  }
+
+  .portrait-break::before{
+    top:0;
+    background:linear-gradient(to bottom,#000,transparent);
+  }
+
+  .portrait-break::after{
+    bottom:0;
+    background:linear-gradient(to top,#000,transparent);
+  }
+
+  .portrait-art{
+    width:min(1180px,92vw);
+    height:min(78vh,820px);
+    object-fit:contain;
+    object-position:center;
+    display:block;
+    opacity:.84;
+    filter:contrast(1.06) brightness(.92);
+  }
+
   .final{
     min-height:100vh;
     display:grid;
@@ -553,6 +595,10 @@
 
   </section>
 
+  <section class="portrait-break" aria-label="기억이 조각난 레너드의 이미지">
+    <img class="portrait-art" src="./memento-fragment.svg" alt="" />
+  </section>
+
   <section class="final">
     <div class="final-inner">
       <small>FINAL QUESTION / MEMORY ON FILM</small>
@@ -566,6 +612,7 @@
 (() => {
   const root=document.documentElement;
   const chapterContents=[...document.querySelectorAll(".chapter .content")];
+  const portraitBreak=document.querySelector(".portrait-break");
   let raf=0;
 
   function render(){
@@ -574,6 +621,18 @@
     const p=Math.max(0,Math.min(1,scrollY/max));
     root.style.setProperty("--progress",p.toFixed(5));
     root.style.setProperty("--film-shift",(-p*6200).toFixed(2)+"px");
+
+    if(portraitBreak){
+      const rect=portraitBreak.getBoundingClientRect();
+      const h=Math.max(innerHeight,1);
+      const center=rect.top + rect.height/2;
+      const d=Math.abs(center-h*.5);
+      let focus=1-(d/(h*.78));
+      focus=Math.max(0,Math.min(1,focus));
+      focus=focus*focus*(3-2*focus);
+      portraitBreak.style.opacity=focus.toFixed(4);
+      portraitBreak.style.transform=`translateY(${((.5-focus)*28).toFixed(1)}px)`;
+    }
 
     /*
       Exact scroll focus:
