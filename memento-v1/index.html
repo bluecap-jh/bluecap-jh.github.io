@@ -3,69 +3,484 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MEMENTO — New Study</title>
+<title>MEMENTO — Chronological Reconstruction</title>
 <style>
+  :root{
+    --paper:#f1f1ee;
+    --muted:rgba(255,255,255,.46);
+    --faint:rgba(255,255,255,.18);
+    --line:rgba(255,255,255,.12);
+  }
   *{box-sizing:border-box}
-  html,body{
-    margin:0;
-    min-height:100%;
+  html{
     background:#000;
-    color:#f2f2ef;
-    font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
+    scroll-behavior:smooth;
   }
   body{
+    margin:0;
+    background:#000;
+    color:var(--paper);
+    font-family:"Pretendard","Noto Sans KR","Helvetica Neue",Arial,sans-serif;
     overflow-x:hidden;
   }
-  .stage{
+
+  .page{
+    width:min(1180px,92vw);
+    margin:0 auto;
+    padding:0 0 18vh;
+  }
+
+  .hero{
     min-height:100vh;
-    display:grid;
-    place-items:center;
-    padding:8vh 8vw;
-    background:#000;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:14vh 0 12vh;
+    border-bottom:1px solid var(--line);
   }
-  .intro{
-    width:min(980px,90vw);
-    text-align:center;
-  }
+
   .eyebrow{
-    display:block;
-    margin-bottom:18px;
     font-size:9px;
     letter-spacing:.24em;
-    color:rgba(255,255,255,.30);
+    color:rgba(255,255,255,.28);
+    margin-bottom:20px;
   }
+
   h1{
     margin:0;
     font-family:Georgia,"Times New Roman",serif;
-    font-size:clamp(76px,11vw,160px);
-    line-height:.92;
+    font-size:clamp(74px,12vw,170px);
+    line-height:.88;
     font-weight:500;
-    letter-spacing:-.055em;
+    letter-spacing:-.06em;
   }
-  p{
-    width:min(720px,82vw);
-    margin:30px auto 0;
-    font-size:13px;
-    line-height:1.8;
-    color:rgba(255,255,255,.46);
+
+  .hero-copy{
+    width:min(720px,78vw);
+    margin-top:34px;
+    font-size:15px;
+    line-height:1.9;
+    color:rgba(255,255,255,.58);
     word-break:keep-all;
   }
-  .reset{
-    margin-top:30px;
+
+  .hero-note{
+    margin-top:28px;
+    display:flex;
+    gap:18px;
+    align-items:center;
+    font-size:9px;
+    letter-spacing:.16em;
+    color:rgba(255,255,255,.26);
+  }
+
+  .hero-note::before{
+    content:"";
+    width:44px;
+    height:1px;
+    background:rgba(255,255,255,.22);
+  }
+
+  .timeline{
+    position:relative;
+    padding:10vh 0 4vh;
+  }
+
+  .timeline::before{
+    content:"";
+    position:absolute;
+    left:16px;
+    top:10vh;
+    bottom:0;
+    width:1px;
+    background:linear-gradient(
+      to bottom,
+      rgba(255,255,255,.05),
+      rgba(255,255,255,.18) 8%,
+      rgba(255,255,255,.18) 92%,
+      rgba(255,255,255,.03)
+    );
+  }
+
+  .chapter{
+    position:relative;
+    display:grid;
+    grid-template-columns:72px minmax(0,1fr);
+    gap:26px;
+    min-height:76vh;
+    padding:9vh 0 11vh;
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+
+  .marker{
+    position:relative;
+    padding-top:4px;
+  }
+
+  .dot{
+    position:absolute;
+    left:12px;
+    top:12px;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.50);
+    background:#000;
+  }
+
+  .index{
+    margin-left:34px;
+    font-size:9px;
+    letter-spacing:.14em;
+    color:rgba(255,255,255,.23);
+    white-space:nowrap;
+  }
+
+  .content{
+    width:min(760px,100%);
+  }
+
+  .meta{
+    display:block;
+    margin-bottom:14px;
     font-size:9px;
     letter-spacing:.18em;
-    color:rgba(255,255,255,.20);
+    color:rgba(255,255,255,.26);
+  }
+
+  h2{
+    margin:0;
+    font-size:clamp(28px,4vw,56px);
+    line-height:1.3;
+    letter-spacing:-.045em;
+    font-weight:500;
+    word-break:keep-all;
+  }
+
+  .body{
+    margin-top:24px;
+    font-size:15px;
+    line-height:1.95;
+    color:rgba(255,255,255,.62);
+    word-break:keep-all;
+  }
+
+  .sub{
+    margin-top:18px;
+    font-size:12px;
+    line-height:1.8;
+    color:rgba(255,255,255,.38);
+    word-break:keep-all;
+  }
+
+  .memory-note{
+    margin-top:30px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.09);
+    font-size:10px;
+    line-height:1.75;
+    letter-spacing:.04em;
+    color:rgba(255,255,255,.26);
+  }
+
+  .final{
+    min-height:88vh;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:14vh 0 10vh;
+  }
+
+  .final-inner{
+    width:min(900px,86vw);
+  }
+
+  .final small{
+    display:block;
+    margin-bottom:18px;
+    font-size:9px;
+    letter-spacing:.20em;
+    color:rgba(255,255,255,.25);
+  }
+
+  .final h3{
+    margin:0;
+    font-size:clamp(34px,5.3vw,74px);
+    line-height:1.3;
+    letter-spacing:-.045em;
+    font-weight:500;
+    word-break:keep-all;
+  }
+
+  .final p{
+    width:min(720px,82vw);
+    margin:24px auto 0;
+    font-size:14px;
+    line-height:1.85;
+    color:rgba(255,255,255,.48);
+    word-break:keep-all;
+  }
+
+  .progress{
+    position:fixed;
+    right:26px;
+    top:50%;
+    transform:translateY(-50%);
+    width:1px;
+    height:32vh;
+    background:rgba(255,255,255,.08);
+    z-index:20;
+  }
+
+  .progress::after{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:1px;
+    height:var(--progress,0%);
+    background:rgba(255,255,255,.45);
+  }
+
+  @media(max-width:760px){
+    .page{width:min(92vw,680px)}
+    .hero{padding-top:18vh}
+    .chapter{
+      grid-template-columns:46px minmax(0,1fr);
+      gap:14px;
+      min-height:auto;
+      padding:12vh 0 14vh;
+    }
+    .timeline::before{left:12px}
+    .dot{left:8px}
+    .index{display:none}
+    .body{font-size:14px}
+    .progress{display:none}
   }
 </style>
 </head>
 <body>
-  <main class="stage">
-    <section class="intro">
-      <span class="eyebrow">CHRISTOPHER NOLAN / NEW MEMORY STUDY</span>
-      <h1>Memento</h1>
-      <p>기존 페이지를 폐기하고 새로운 구조를 시작합니다.</p>
-      <div class="reset">RESET / NEW DIRECTION</div>
-    </section>
-  </main>
+<div class="progress" aria-hidden="true"></div>
+
+<main class="page">
+  <section class="hero">
+    <div class="eyebrow">CHRISTOPHER NOLAN / CHRONOLOGICAL RECONSTRUCTION</div>
+    <h1>Memento</h1>
+    <p class="hero-copy">
+      영화는 기억의 혼란을 체험하게 만들기 위해 시간을 뒤집어 보여줍니다.
+      이 페이지에서는 그 구조를 잠시 해체하고, 사건을 실제 시간 순서대로 다시 놓아봅니다.
+      스크롤은 단순히 앞으로 흐르고, 이야기도 같은 방향으로 진행됩니다.
+    </p>
+    <div class="hero-note">SCROLL / PAST → PRESENT</div>
+  </section>
+
+  <section class="timeline">
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">01</span></div>
+      <div class="content">
+        <span class="meta">BEFORE THE FILM / MEMORY</span>
+        <h2>레너드는 아내와 함께 평범한 삶을 살고 있었습니다.</h2>
+        <p class="body">
+          어느 날 두 명의 침입자가 집에 들어오고, 레너드는 습격을 당합니다.
+          이 사건 이후 그는 새로운 기억을 오래 저장하지 못하는 상태가 됩니다.
+          그는 몇 분이 지나면 방금 있었던 일조차 잊어버리고, 기억 대신 사진과 메모, 문신에 의존하기 시작합니다.
+        </p>
+        <p class="sub">
+          이 시점이 이후 모든 행동의 출발점입니다. 레너드는 자신이 기억할 수 없다는 사실만은 알고 있습니다.
+        </p>
+        <div class="memory-note">MEMORY CONDITION / 새로운 기억을 장기적으로 저장하지 못함</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">02</span></div>
+      <div class="content">
+        <span class="meta">SELF-MADE SYSTEM</span>
+        <h2>그는 기억 대신 기록을 믿는 시스템을 만듭니다.</h2>
+        <p class="body">
+          사람의 얼굴과 이름은 폴라로이드 사진에 적고, 중요한 사실은 몸에 문신으로 남깁니다.
+          그에게 사진과 문신은 기억보다 신뢰할 수 있는 증거처럼 보입니다.
+          하지만 기록을 남긴 사람이 결국 자기 자신이라는 사실은 계속 문제로 남습니다.
+        </p>
+        <p class="sub">
+          “기억은 틀릴 수 있지만 사실은 틀리지 않는다.” 레너드는 그렇게 믿으며 자신의 행동을 조직합니다.
+        </p>
+        <div class="memory-note">SYSTEM / PHOTO · NOTE · TATTOO</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">03</span></div>
+      <div class="content">
+        <span class="meta">SAMMY JANKIS</span>
+        <h2>레너드는 새미 젠키스의 이야기를 자신의 기억 규칙처럼 반복합니다.</h2>
+        <p class="body">
+          과거 보험 조사원으로 일하던 레너드는 새미라는 남자의 기억 장애 사례를 조사했다고 말합니다.
+          새미는 새로운 기억을 만들지 못했고, 반복을 통해서도 정상적으로 생활하지 못했습니다.
+          레너드는 이 이야기를 통해 자신의 상태를 설명하고, 동시에 자신이 새미와는 다르다고 믿으려 합니다.
+        </p>
+        <p class="sub">
+          영화가 진행될수록 이 이야기가 정확히 누구의 기억인지조차 불확실해집니다.
+        </p>
+        <div class="memory-note">RECOLLECTION / 기억은 설명이 아니라 재구성일 수 있음</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">04</span></div>
+      <div class="content">
+        <span class="meta">TEDDY / INFORMATION</span>
+        <h2>테디는 레너드의 복수를 돕는다고 말합니다.</h2>
+        <p class="body">
+          테디는 레너드에게 사건에 대한 정보를 주고, 범인을 찾는 일을 도와왔다고 주장합니다.
+          레너드는 그 말을 매번 처음 듣는 것처럼 받아들이고, 그 순간 가진 기록을 기준으로 테디를 판단합니다.
+          둘 사이의 관계는 도움과 조작의 경계에 놓이게 됩니다.
+        </p>
+        <p class="sub">
+          기억이 사라질 때마다 관계도 초기화되지만, 사진에 적힌 한 줄의 문장은 그대로 남습니다.
+        </p>
+        <div class="memory-note">TRUST / 사람보다 기록을 먼저 믿음</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">05</span></div>
+      <div class="content">
+        <span class="meta">JIMMY GRANTZ</span>
+        <h2>레너드는 지미 그랜츠를 자신이 찾던 범인이라고 믿게 됩니다.</h2>
+        <p class="body">
+          테디의 도움으로 레너드는 지미를 외딴 건물로 유인하고 그를 살해합니다.
+          그러나 직후 테디는 충격적인 말을 합니다.
+          레너드가 찾던 진짜 범인은 이미 오래전에 죽었고, 자신이 그 복수를 도왔다는 주장입니다.
+        </p>
+        <p class="sub">
+          레너드가 지금까지 계속 복수를 반복해왔을 가능성이 드러나는 순간입니다.
+        </p>
+        <div class="memory-note">BREAK / 복수의 목표가 이미 끝났을 수 있다는 사실</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">06</span></div>
+      <div class="content">
+        <span class="meta">CHOICE / SELF-DECEPTION</span>
+        <h2>레너드는 기억을 잃기 전에 새로운 거짓말을 남깁니다.</h2>
+        <p class="body">
+          테디의 말을 받아들이면 자신의 삶을 지탱해온 목적이 사라집니다.
+          레너드는 그 사실을 견디지 못하고, 미래의 자신이 테디를 범인으로 의심하도록 기록을 조작합니다.
+          차량 번호를 적고, 테디의 사진에 믿지 말라는 메모를 남깁니다.
+        </p>
+        <p class="sub">
+          여기서 중요한 것은 “기억을 잃어서 속는 것”만이 아닙니다.
+          레너드는 기억을 잃을 미래의 자신을 의도적으로 속이기로 선택합니다.
+        </p>
+        <div class="memory-note">DECISION / 기억이 사라지기 전에 미래의 자신에게 거짓 단서를 남김</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">07</span></div>
+      <div class="content">
+        <span class="meta">NATALIE</span>
+        <h2>나탈리는 레너드의 상태를 이해하고 그를 이용합니다.</h2>
+        <p class="body">
+          지미와 연결되어 있던 나탈리는 레너드가 몇 분 뒤 대화를 잊는다는 사실을 알게 됩니다.
+          그녀는 그 약점을 이용하기도 하고, 동시에 그에게 필요한 정보를 제공하기도 합니다.
+          레너드는 매 순간 새로 시작되는 관계 속에서 그녀를 믿을지 의심할지 결정해야 합니다.
+        </p>
+        <p class="sub">
+          같은 사람이 몇 분 사이에 적과 동료로 바뀌어 보이는 이유는 관계가 변해서가 아니라, 레너드의 기억이 사라지기 때문입니다.
+        </p>
+        <div class="memory-note">RELATIONSHIP / 감정보다 남겨진 기록이 관계를 결정함</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">08</span></div>
+      <div class="content">
+        <span class="meta">THE CLUE</span>
+        <h2>테디의 차량 번호가 새로운 ‘사실’이 됩니다.</h2>
+        <p class="body">
+          나탈리의 도움으로 레너드는 자신이 남겨둔 차량 번호를 추적합니다.
+          기록은 다시 하나의 결론으로 이어지고, 레너드는 그 번호의 주인을 자신이 찾아야 할 인물이라고 받아들입니다.
+          그 기록을 왜 남겼는지는 이미 기억하지 못합니다.
+        </p>
+        <p class="sub">
+          과거의 자신이 만든 거짓말이 현재의 자신에게는 완벽한 객관적 사실처럼 작동합니다.
+        </p>
+        <div class="memory-note">FACT / 출처를 잊은 기록은 절대적인 진실처럼 보임</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">09</span></div>
+      <div class="content">
+        <span class="meta">THE PRESENT</span>
+        <h2>레너드는 테디를 자신의 목표로 확신합니다.</h2>
+        <p class="body">
+          사진, 메모, 문신이 하나의 방향을 가리키자 레너드는 테디를 범인이라고 믿습니다.
+          그 믿음이 어떻게 만들어졌는지는 기억하지 못하지만, 기록만 보면 의심할 이유가 없습니다.
+          그는 자신이 직접 만들어낸 단서를 따라 마지막 행동으로 향합니다.
+        </p>
+        <p class="sub">
+          관객이 영화 초반에 보았던 사건이 실제 시간 순서에서는 이 이야기의 마지막에 놓입니다.
+        </p>
+        <div class="memory-note">PRESENT / 결과가 다시 새로운 원인처럼 작동함</div>
+      </div>
+    </article>
+
+    <article class="chapter">
+      <div class="marker"><span class="dot"></span><span class="index">10</span></div>
+      <div class="content">
+        <span class="meta">END / LOOP</span>
+        <h2>레너드는 테디를 살해합니다.</h2>
+        <p class="body">
+          그는 자신의 기록을 믿고 테디를 죽입니다.
+          영화는 여기서 사건을 끝내지만, 레너드의 구조는 끝나지 않습니다.
+          시간이 조금 지나면 그는 다시 자신이 무엇을 했는지 잊을 것이고,
+          남겨진 기록은 또 다른 현재의 출발점이 됩니다.
+        </p>
+        <p class="sub">
+          메멘토의 비극은 단순히 기억을 잃는 데 있지 않습니다.
+          기억 대신 믿기로 한 ‘사실’조차 자신이 만들어낼 수 있다는 데 있습니다.
+        </p>
+        <div class="memory-note">LOOP / 기억은 사라져도 선택의 결과는 남음</div>
+      </div>
+    </article>
+
+  </section>
+
+  <section class="final">
+    <div class="final-inner">
+      <small>FINAL QUESTION / CHRONOLOGICAL MEMORY</small>
+      <h3>시간을 바로 세워도,<br>진실은 더 선명해졌나요?</h3>
+      <p>
+        사건을 시간 순서대로 정리하면 무엇이 먼저 일어났는지는 알 수 있습니다.
+        하지만 레너드가 무엇을 사실이라고 믿었는지, 그리고 그 믿음이 어디서 시작됐는지는 여전히 흔들립니다.
+      </p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const root=document.documentElement;
+  let raf=0;
+
+  function render(){
+    raf=0;
+    const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
+    const p=Math.max(0,Math.min(1,scrollY/max));
+    root.style.setProperty("--progress",(p*100).toFixed(2)+"%");
+  }
+
+  addEventListener("scroll",()=>{
+    if(!raf) raf=requestAnimationFrame(render);
+  },{passive:true});
+  addEventListener("resize",render);
+  render();
+})();
+</script>
 </body>
 </html>
