@@ -254,7 +254,7 @@
     display:block;
     min-height:116vh;
     padding:20vh 0 23vh;
-    border-bottom:1px solid rgba(255,255,255,.07);
+    border-bottom:none;
   }
 
 
@@ -306,46 +306,92 @@
 
 
 
-  .portrait-break{
-    position:relative;
+
+  .memory-lure{
+    position:fixed;
+    left:var(--lure-x,52vw);
+    top:var(--lure-y,18vh);
+    width:12px;
+    height:12px;
     z-index:4;
-    min-height:118vh;
-    display:grid;
-    place-items:center;
-    overflow:hidden;
-    opacity:0;
-    will-change:opacity,transform;
+    pointer-events:none;
+    transform:translate(-50%,-50%);
+    opacity:var(--lure-opacity,.8);
+    transition:
+      left .18s linear,
+      top .18s linear,
+      opacity .28s ease;
+    will-change:left,top,opacity;
   }
 
-  .portrait-break::before,
-  .portrait-break::after{
+  .memory-lure::before{
     content:"";
     position:absolute;
-    left:0;
-    right:0;
-    height:22vh;
-    z-index:2;
-    pointer-events:none;
+    left:50%;
+    top:50%;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:
+      radial-gradient(circle,
+        rgba(255,255,255,1) 0 16%,
+        rgba(255,255,255,.98) 17% 27%,
+        rgba(235,240,248,.72) 28% 46%,
+        rgba(210,220,235,.30) 47% 68%,
+        rgba(190,205,225,0) 69% 100%
+      );
+    box-shadow:
+      0 0 8px rgba(255,255,255,.92),
+      0 0 22px rgba(230,238,250,.58),
+      0 0 52px rgba(200,216,238,.28),
+      0 0 100px rgba(190,205,230,.12);
+    animation:lurePulse 4.6s ease-in-out infinite;
   }
 
-  .portrait-break::before{
-    top:0;
-    background:linear-gradient(to bottom,#000,transparent);
+  .memory-lure::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:88px;
+    height:88px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle,
+      rgba(235,242,255,.12) 0,
+      rgba(220,232,250,.06) 34%,
+      rgba(210,225,245,.025) 54%,
+      transparent 72%
+    );
+    filter:blur(5px);
+    animation:lureFloat 8s ease-in-out infinite;
   }
 
-  .portrait-break::after{
-    bottom:0;
-    background:linear-gradient(to top,#000,transparent);
+  @keyframes lurePulse{
+    0%,100%{
+      transform:translate(-50%,-50%) scale(.88);
+      opacity:.72;
+      box-shadow:
+        0 0 7px rgba(255,255,255,.78),
+        0 0 18px rgba(230,238,250,.46),
+        0 0 42px rgba(200,216,238,.20);
+    }
+    50%{
+      transform:translate(-50%,-50%) scale(1.18);
+      opacity:1;
+      box-shadow:
+        0 0 10px rgba(255,255,255,1),
+        0 0 28px rgba(230,238,250,.72),
+        0 0 64px rgba(200,216,238,.34),
+        0 0 118px rgba(190,205,230,.16);
+    }
   }
 
-  .portrait-art{
-    width:min(1180px,92vw);
-    height:min(78vh,820px);
-    object-fit:contain;
-    object-position:center;
-    display:block;
-    opacity:.84;
-    filter:contrast(1.06) brightness(.92);
+  @keyframes lureFloat{
+    0%,100%{transform:translate(-50%,-50%) translate3d(-7px,5px,0) scale(.96)}
+    35%{transform:translate(-50%,-50%) translate3d(9px,-8px,0) scale(1.05)}
+    70%{transform:translate(-50%,-50%) translate3d(4px,9px,0) scale(1)}
   }
 
   .final{
@@ -421,6 +467,18 @@
   }
 
   @media(max-width:760px){
+    .memory-lure{
+      width:9px;
+      height:9px;
+    }
+    .memory-lure::before{
+      width:8px;
+      height:8px;
+    }
+    .memory-lure::after{
+      width:64px;
+      height:64px;
+    }
     .page{width:min(92vw,680px)}
     .film-strip{
       width:96vw;
@@ -478,6 +536,7 @@
 </div>
 
 <div class="progress" aria-hidden="true"></div>
+<div class="memory-lure" aria-hidden="true"></div>
 
 <main class="page">
   <section class="hero">
@@ -595,11 +654,7 @@
 
   </section>
 
-  <section class="portrait-break" aria-label="기억이 조각난 레너드의 이미지">
-    <img class="portrait-art" src="./memento-fragment.svg" alt="" />
-  </section>
-
-  <section class="final">
+<section class="final">
     <div class="final-inner">
       <small>FINAL QUESTION / MEMORY ON FILM</small>
       <h3>기억이 사라진 채 다음 순간을 맞는 감각을 경험하셨나요?</h3>
@@ -612,7 +667,7 @@
 (() => {
   const root=document.documentElement;
   const chapterContents=[...document.querySelectorAll(".chapter .content")];
-  const portraitBreak=document.querySelector(".portrait-break");
+  const lure=document.querySelector(".memory-lure");
   let raf=0;
 
   function render(){
@@ -622,16 +677,20 @@
     root.style.setProperty("--progress",p.toFixed(5));
     root.style.setProperty("--film-shift",(-p*6200).toFixed(2)+"px");
 
-    if(portraitBreak){
-      const rect=portraitBreak.getBoundingClientRect();
-      const h=Math.max(innerHeight,1);
-      const center=rect.top + rect.height/2;
-      const d=Math.abs(center-h*.5);
-      let focus=1-(d/(h*.78));
-      focus=Math.max(0,Math.min(1,focus));
-      focus=focus*focus*(3-2*focus);
-      portraitBreak.style.opacity=focus.toFixed(4);
-      portraitBreak.style.transform=`translateY(${((.5-focus)*28).toFixed(1)}px)`;
+    if(lure){
+      // Scroll pulls the light downward through the viewport.
+      const y=14 + p*70;
+      // It also drifts gently left/right, as if floating in deep water.
+      const x=52 + Math.sin(p*Math.PI*4.2)*13 + Math.sin(p*Math.PI*1.7)*4;
+
+      // Fade in after the opening, then soften again near the final question.
+      let opacity=1;
+      if(p<.06) opacity=p/.06;
+      if(p>.93) opacity=Math.max(0,(1-p)/.07);
+
+      root.style.setProperty("--lure-y",y.toFixed(2)+"vh");
+      root.style.setProperty("--lure-x",x.toFixed(2)+"vw");
+      root.style.setProperty("--lure-opacity",opacity.toFixed(3));
     }
 
     /*
