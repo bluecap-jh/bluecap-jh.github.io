@@ -180,27 +180,6 @@
     text-shadow:0 0 7px rgba(255,255,255,.05);
   }
 
-  /* ---------- MEMORY PHOTO BACKGROUND ---------- */
-  .memory-photo-bg{
-    position:fixed;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    background:
-      linear-gradient(
-        to bottom,
-        rgba(0,0,0,.82) 0%,
-        rgba(0,0,0,.52) 18%,
-        rgba(0,0,0,.42) 48%,
-        rgba(0,0,0,.56) 78%,
-        rgba(0,0,0,.88) 100%
-      ),
-      url("./memento-fragment.svg") center 54% / min(1180px,88vw) auto no-repeat;
-    opacity:.30;
-    filter:grayscale(1) brightness(.48) contrast(1.08);
-    mix-blend-mode:screen;
-  }
-
   /* ---------- MAIN ---------- */
   .page{
     position:relative;
@@ -337,8 +316,9 @@
     z-index:8;
     pointer-events:none;
     transform:translate(-50%,-50%);
-    opacity:var(--lure-opacity,1);
+    opacity:var(--lure-opacity,.85);
     mix-blend-mode:screen;
+    filter:brightness(var(--lure-brightness,.85));
     transition:
       left .18s linear,
       top .18s linear,
@@ -416,6 +396,70 @@
     70%{transform:translate(-50%,-50%) translate3d(4px,9px,0) scale(1)}
   }
 
+  .mural-reveal{
+    position:relative;
+    height:180vh;
+    z-index:6;
+    background:#000;
+  }
+
+  .mural-stage{
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow:hidden;
+    background:#000;
+  }
+
+  .mural-photo{
+    position:absolute;
+    inset:0;
+    background:
+      url("./memento-fragment.svg")
+      center 52% / min(1200px,90vw) auto
+      no-repeat;
+    opacity:var(--mural-opacity,0);
+    filter:grayscale(1) brightness(.62) contrast(1.14);
+    -webkit-mask-image:
+      radial-gradient(
+        circle var(--mural-radius,0vmin)
+        at var(--mural-x,50%) var(--mural-y,50%),
+        #000 0 34%,
+        rgba(0,0,0,.94) 48%,
+        rgba(0,0,0,.58) 68%,
+        rgba(0,0,0,.18) 84%,
+        transparent 100%
+      );
+    mask-image:
+      radial-gradient(
+        circle var(--mural-radius,0vmin)
+        at var(--mural-x,50%) var(--mural-y,50%),
+        #000 0 34%,
+        rgba(0,0,0,.94) 48%,
+        rgba(0,0,0,.58) 68%,
+        rgba(0,0,0,.18) 84%,
+        transparent 100%
+      );
+    -webkit-mask-repeat:no-repeat;
+    mask-repeat:no-repeat;
+    will-change:opacity,-webkit-mask-image,mask-image;
+  }
+
+  .mural-stage::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(
+        circle 44vmin at var(--mural-x,50%) var(--mural-y,50%),
+        rgba(255,255,255,.025) 0,
+        rgba(255,255,255,.01) 30%,
+        transparent 67%
+      );
+    opacity:var(--mural-glow,.0);
+  }
+
   .final{
     min-height:100vh;
     display:grid;
@@ -489,6 +533,10 @@
   }
 
   @media(max-width:760px){
+    .mural-photo{
+      background-size:118vw auto;
+      background-position:center 52%;
+    }
     .memory-photo-bg{
       background-size:110vw auto;
       opacity:.24;
@@ -561,7 +609,6 @@
   </div>
 </div>
 
-<div class="memory-photo-bg" aria-hidden="true"></div>
 <div class="progress" aria-hidden="true"></div>
 <div class="memory-lure" aria-hidden="true"></div>
 
@@ -688,6 +735,12 @@
       <p>앞선 장면을 확신하지 못한 채, 남겨진 정보만으로 다음 순간을 이해하는 흐름을 따라왔습니다. 방금 전의 기억이 사라진다면 지금 보이는 단서만으로도 같은 선택을 할 수 있을까요?</p>
     </div>
   </section>
+
+  <section class="mural-reveal" aria-label="기억이 드러나는 마지막 장면">
+    <div class="mural-stage">
+      <div class="mural-photo" aria-hidden="true"></div>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -695,6 +748,7 @@
   const root=document.documentElement;
   const chapterContents=[...document.querySelectorAll(".chapter .content")];
   const lure=document.querySelector(".memory-lure");
+  const mural=document.querySelector(".mural-reveal");
   let raf=0;
 
   function render(){
@@ -705,19 +759,53 @@
     root.style.setProperty("--film-shift",(-p*6200).toFixed(2)+"px");
 
     if(lure){
-      // Scroll pulls the light downward through the viewport.
-      const y=10 + p*78;
-      // It also drifts gently left/right, as if floating in deep water.
-      const x=50 + Math.sin(p*Math.PI*4.2)*18 + Math.sin(p*Math.PI*1.7)*6;
+      const baseY=10 + p*78;
+      const baseX=50 + Math.sin(p*Math.PI*4.2)*18 + Math.sin(p*Math.PI*1.7)*6;
+      let x=baseX;
+      let y=baseY;
+      let opacity=.85;
+      let brightness=.85;
 
-      // Fade in after the opening, then soften again near the final question.
-      let opacity=1;
-      if(p<.025) opacity=p/.025;
-      if(p>.975) opacity=Math.max(0,(1-p)/.025);
+      if(p<.025) opacity=(p/.025)*.85;
+
+      if(mural){
+        const rect=mural.getBoundingClientRect();
+        const h=Math.max(innerHeight,1);
+        const travel=Math.max(mural.offsetHeight-h,1);
+
+        // 0 when the mural section reaches the viewport, 1 near the end of the reveal.
+        let reveal=(-rect.top)/travel;
+        reveal=Math.max(0,Math.min(1,reveal));
+
+        if(rect.top < h && rect.bottom > 0){
+          const eased=reveal*reveal*(3-2*reveal);
+
+          // The lure settles near the center and brightens like a flashlight.
+          x=baseX*(1-eased) + 51.5*eased;
+          y=baseY*(1-eased) + 50*eased;
+          opacity=.85 + eased*.15;
+          brightness=.85 + eased*.95;
+
+          // Reveal the mural only where the light reaches.
+          const radius=8 + eased*54;
+          const muralOpacity=.08 + eased*.64;
+
+          root.style.setProperty("--mural-x","51.5%");
+          root.style.setProperty("--mural-y","50%");
+          root.style.setProperty("--mural-radius",radius.toFixed(2)+"vmin");
+          root.style.setProperty("--mural-opacity",muralOpacity.toFixed(3));
+          root.style.setProperty("--mural-glow",(eased*.72).toFixed(3));
+        }else{
+          root.style.setProperty("--mural-radius","0vmin");
+          root.style.setProperty("--mural-opacity","0");
+          root.style.setProperty("--mural-glow","0");
+        }
+      }
 
       root.style.setProperty("--lure-y",y.toFixed(2)+"vh");
       root.style.setProperty("--lure-x",x.toFixed(2)+"vw");
       root.style.setProperty("--lure-opacity",opacity.toFixed(3));
+      root.style.setProperty("--lure-brightness",brightness.toFixed(3));
     }
 
     /*
