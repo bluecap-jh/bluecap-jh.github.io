@@ -38,17 +38,17 @@
     top:-24vh;
     bottom:-24vh;
     width:168px;
-    border-left:1px solid rgba(255,255,255,.26);
-    border-right:1px solid rgba(255,255,255,.26);
+    border-left:1px solid rgba(255,255,255,.42);
+    border-right:1px solid rgba(255,255,255,.42);
     box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.09),
-      inset 0 0 34px rgba(255,255,255,.025);
+      inset 0 0 0 1px rgba(255,255,255,.15),
+      inset 0 0 34px rgba(255,255,255,.045);
     background:
       linear-gradient(
         to right,
-        rgba(255,255,255,.06) 0 16px,
-        rgba(255,255,255,.016) 16px calc(100% - 16px),
-        rgba(255,255,255,.06) calc(100% - 16px) 100%
+        rgba(255,255,255,.10) 0 16px,
+        rgba(255,255,255,.028) 16px calc(100% - 16px),
+        rgba(255,255,255,.10) calc(100% - 16px) 100%
       ),
       repeating-linear-gradient(
         to bottom,
@@ -71,10 +71,10 @@
       repeating-linear-gradient(
         to bottom,
         transparent 0 7px,
-        rgba(255,255,255,.38) 7px 25px,
+        rgba(255,255,255,.56) 7px 25px,
         transparent 25px 42px
       );
-    opacity:.92;
+    opacity:1;
   }
   .film-strip::before{left:0}
   .film-strip::after{right:0}
@@ -108,22 +108,58 @@
       );
   }
 
+  .film-copy{
+    position:absolute;
+    inset:0 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+    align-items:center;
+    padding:7vh 0;
+    color:rgba(255,255,255,.56);
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:10px;
+    line-height:1.25;
+    letter-spacing:.16em;
+    text-align:center;
+    text-transform:uppercase;
+    overflow:hidden;
+    pointer-events:none;
+  }
+
+  .film-copy span{
+    display:block;
+    width:100%;
+    padding:10px 4px;
+    border-top:1px solid rgba(255,255,255,.11);
+    border-bottom:1px solid rgba(255,255,255,.08);
+    transform:rotate(-90deg);
+    white-space:nowrap;
+    opacity:.78;
+    text-shadow:0 0 6px rgba(255,255,255,.06);
+  }
+
+  .film-strip.center .film-copy span{
+    transform:rotate(90deg);
+    opacity:.58;
+  }
+
   .film-strip.left{
     left:-10px;
-    opacity:.30;
+    opacity:.46;
     transform:rotate(-3.5deg) translateY(var(--film-shift));
   }
 
   .film-strip.center{
     left:50%;
     margin-left:-84px;
-    opacity:.12;
+    opacity:.20;
     transform:translateX(-50%) translateY(calc(var(--film-shift) * -.55));
   }
 
   .film-strip.right{
     right:-12px;
-    opacity:.24;
+    opacity:.40;
     transform:rotate(4deg) translateY(calc(var(--film-shift) * -1.05));
   }
 
@@ -386,7 +422,7 @@
 
   .body{
     margin-top:28px;
-    font-size:18px;
+    font-size:16px;
     line-height:1.9;
     color:rgba(255,255,255,.72);
     word-break:keep-all;
@@ -491,7 +527,8 @@
 
   @media(max-width:760px){
     .page{width:min(92vw,680px)}
-    .film-strip{width:76px;left:-25px!important}
+    .film-strip{width:88px;left:-26px!important}
+    .film-copy{inset:0 16px;font-size:8px}
     .tattoo-layer{display:none}
     .progress{display:none}
     .timeline::before{left:12px}
@@ -518,9 +555,39 @@
 <body>
 
 <div class="film-bg" aria-hidden="true">
-  <div class="film-strip left"><span class="film-core"></span></div>
-  <div class="film-strip center"><span class="film-core"></span></div>
-  <div class="film-strip right"><span class="film-core"></span></div>
+  <div class="film-strip left">
+    <span class="film-core"></span>
+    <div class="film-copy">
+      <span>REMEMBER SAMMY JANKIS</span>
+      <span>FACT 01 / MEMORY</span>
+      <span>DON'T TRUST</span>
+      <span>PHOTO / NOTE / TATTOO</span>
+      <span>WHAT DID YOU FORGET?</span>
+      <span>MEMORY IS UNRELIABLE</span>
+    </div>
+  </div>
+  <div class="film-strip center">
+    <span class="film-core"></span>
+    <div class="film-copy">
+      <span>COLOR / BACKWARD</span>
+      <span>B&amp;W / FORWARD</span>
+      <span>CAUSE AFTER RESULT</span>
+      <span>WRITE IT DOWN</span>
+      <span>THE RECORD REMAINS</span>
+      <span>PRESENT / LOOP</span>
+    </div>
+  </div>
+  <div class="film-strip right">
+    <span class="film-core"></span>
+    <div class="film-copy">
+      <span>WHO WROTE THE FACT?</span>
+      <span>A MEMORY CAN CHANGE</span>
+      <span>REMEMBER THE PHOTO</span>
+      <span>YOU CHOOSE THE TRUTH</span>
+      <span>DO NOT BELIEVE HIS LIES</span>
+      <span>WHAT REMAINS?</span>
+    </div>
+  </div>
 </div>
 
 <div class="tattoo-layer" aria-hidden="true">
@@ -812,7 +879,7 @@
     const max=Math.max(document.documentElement.scrollHeight-innerHeight,1);
     const p=Math.max(0,Math.min(1,scrollY/max));
     root.style.setProperty("--progress",p.toFixed(5));
-    root.style.setProperty("--film-shift",(-p*360).toFixed(2)+"px");
+    root.style.setProperty("--film-shift",(-p*760).toFixed(2)+"px");
 
     tattooItems.forEach(el=>{
       const threshold=parseFloat(el.dataset.threshold || "0");
