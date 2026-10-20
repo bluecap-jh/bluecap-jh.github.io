@@ -247,21 +247,6 @@
     padding-top:18vh;
   }
 
-  .timeline::before{
-    content:"";
-    position:absolute;
-    left:18px;
-    top:18vh;
-    bottom:4vh;
-    width:1px;
-    background:linear-gradient(
-      to bottom,
-      rgba(255,255,255,.05),
-      rgba(255,255,255,.20) 8%,
-      rgba(255,255,255,.20) 92%,
-      rgba(255,255,255,.03)
-    );
-  }
 
   /* spacing roughly doubled from the previous build */
   .chapter{
@@ -272,35 +257,8 @@
     border-bottom:1px solid rgba(255,255,255,.07);
   }
 
-  .marker{
-    position:absolute;
-    left:0;
-    top:50%;
-    transform:translateY(-50%);
-    width:82px;
-    display:flex;
-    align-items:center;
-    justify-content:flex-start;
-    gap:10px;
-    text-align:left;
-  }
 
-  .dot{
-    position:static;
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    border:1px solid rgba(255,255,255,.60);
-    background:#000;
-    flex:0 0 auto;
-  }
 
-  .index{
-    margin:0;
-    font-size:10px;
-    letter-spacing:.14em;
-    color:rgba(255,255,255,.30);
-  }
 
   .content{
     width:min(760px,76vw);
@@ -447,25 +405,13 @@
       white-space:normal;
     }
     .progress{display:none}
-    .timeline::before{left:12px}
     .chapter{
       min-height:auto;
       padding:22vh 0 24vh;
     }
-    .marker{
-      left:0;
-      top:50%;
-      width:46px;
-      transform:translateY(-50%);
-      gap:6px;
-    }
-    .marker .index{
-      font-size:8px;
-    }
     .content{
       width:min(82vw,680px);
     }
-    .index{display:inline-block}
     .hero-copy{width:88vw}
     .body{font-size:16px}
     .sub{font-size:16px}
@@ -515,7 +461,6 @@
   <section class="timeline">
 
     <article class="chapter" data-chapter="1">
-      <div class="marker"><span class="dot"></span><span class="index">01</span></div>
       <div class="content">
         <span class="meta">COLOR / RESULT FIRST</span>
         <h2>그러니까, 영화는 이미 끝난 사건에서 시작합니다.</h2>
@@ -529,7 +474,6 @@
     </article>
 
     <article class="chapter" data-chapter="2">
-      <div class="marker"><span class="dot"></span><span class="index">02</span></div>
       <div class="content">
         <span class="meta">B&W / BEGIN</span>
         <h2>흑백 화면 쪽은, 적어도 겉보기에는, 앞으로 갑니다.</h2>
@@ -543,7 +487,6 @@
     </article>
 
     <article class="chapter" data-chapter="3">
-      <div class="marker"><span class="dot"></span><span class="index">03</span></div>
       <div class="content">
         <span class="meta">COLOR / ONE STEP EARLIER</span>
         <h2>그리고 컬러 장면은 조금 전이 아니라, 조금 더 이전으로 돌아갑니다.</h2>
@@ -557,7 +500,6 @@
     </article>
 
     <article class="chapter" data-chapter="4">
-      <div class="marker"><span class="dot"></span><span class="index">04</span></div>
       <div class="content">
         <span class="meta">B&W / SAMMY JANKIS</span>
         <h2>새미 젠키스의 이야기는 설명 같지만, 어쩌면 변명처럼 들리기도 합니다.</h2>
@@ -571,7 +513,6 @@
     </article>
 
     <article class="chapter" data-chapter="5">
-      <div class="marker"><span class="dot"></span><span class="index">05</span></div>
       <div class="content">
         <span class="meta">COLOR / NATALIE</span>
         <h2>나탈리는 한 사람인데도, 장면마다 거의 다른 사람처럼 보입니다.</h2>
@@ -585,7 +526,6 @@
     </article>
 
     <article class="chapter" data-chapter="6">
-      <div class="marker"><span class="dot"></span><span class="index">06</span></div>
       <div class="content">
         <span class="meta">B&W / THE PHONE</span>
         <h2>전화 통화는 이어지는데, 누구와 이어지는지는 오히려 더 흐려집니다.</h2>
@@ -599,7 +539,6 @@
     </article>
 
     <article class="chapter" data-chapter="7">
-      <div class="marker"><span class="dot"></span><span class="index">07</span></div>
       <div class="content">
         <span class="meta">COLOR / ACTION BEFORE CAUSE</span>
         <h2>행동은 먼저 나타나고, 이유는 늘 한 박자 늦게 도착합니다.</h2>
@@ -613,7 +552,6 @@
     </article>
 
     <article class="chapter" data-chapter="8">
-      <div class="marker"><span class="dot"></span><span class="index">08</span></div>
       <div class="content">
         <span class="meta">B&W / FACTS</span>
         <h2>레너드는 기억보다 기록을 믿는다고 말하지만, 그 말도 조금 불안합니다.</h2>
@@ -627,7 +565,6 @@
     </article>
 
     <article class="chapter" data-chapter="9">
-      <div class="marker"><span class="dot"></span><span class="index">09</span></div>
       <div class="content">
         <span class="meta">COLOR / TEDDY</span>
         <h2>테디는 계속 같은 사람인데, 우리는 계속 다른 사람으로 읽게 됩니다.</h2>
@@ -641,7 +578,6 @@
     </article>
 
     <article class="chapter" data-chapter="10">
-      <div class="marker"><span class="dot"></span><span class="index">10</span></div>
       <div class="content">
         <span class="meta">B&W / CONVERGENCE</span>
         <h2>서로 반대로 움직이던 시간은 결국 같은 지점을 향하고 있었던 것 같습니다.</h2>
@@ -655,7 +591,6 @@
     </article>
 
     <article class="chapter" data-chapter="11">
-      <div class="marker"><span class="dot"></span><span class="index">11</span></div>
       <div class="content">
         <span class="meta">COLOR / JIMMY</span>
         <h2>지미의 사건은 답처럼 보이지만, 이상하게도 또 다른 의심을 남깁니다.</h2>
@@ -669,7 +604,6 @@
     </article>
 
     <article class="chapter" data-chapter="12">
-      <div class="marker"><span class="dot"></span><span class="index">12</span></div>
       <div class="content">
         <span class="meta">B&W → COLOR</span>
         <h2>흑백이 컬러로 바뀌는 순간, 구조가 아니라 현재가 열립니다.</h2>
@@ -683,7 +617,6 @@
     </article>
 
     <article class="chapter" data-chapter="13">
-      <div class="marker"><span class="dot"></span><span class="index">13</span></div>
       <div class="content">
         <span class="meta">CHOICE / MEMORY AS A TOOL</span>
         <h2>레너드는 진실을 기억하려는 대신, 남겨 둘 사실을 선택합니다.</h2>
