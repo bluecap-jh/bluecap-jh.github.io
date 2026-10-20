@@ -223,7 +223,7 @@
   h1{
     margin:0;
     font-family:Georgia,"Times New Roman",serif;
-    font-size:clamp(78px,12vw,166px);
+    font-size:clamp(58px,9vw,124px);
     line-height:.88;
     font-weight:500;
     letter-spacing:-.06em;
@@ -232,9 +232,9 @@
   .hero-copy{
     width:min(720px,72vw);
     margin-top:38px;
-    font-size:15px;
-    line-height:2.0;
-    color:rgba(255,255,255,.58);
+    font-size:18px;
+    line-height:1.9;
+    color:rgba(255,255,255,.70);
     word-break:keep-all;
   }
 
@@ -311,6 +311,10 @@
 
   .content{
     width:min(730px,100%);
+    opacity:1;
+    transform:translateY(0);
+    transition:opacity .08s linear, filter .08s linear;
+    will-change:opacity,filter;
   }
 
   .meta{
@@ -323,7 +327,7 @@
 
   h2{
     margin:0;
-    font-size:clamp(30px,4.1vw,58px);
+    font-size:clamp(24px,3.1vw,44px);
     line-height:1.34;
     letter-spacing:-.045em;
     font-weight:500;
@@ -332,17 +336,17 @@
 
   .body{
     margin-top:28px;
-    font-size:15px;
-    line-height:2.0;
-    color:rgba(255,255,255,.64);
+    font-size:18px;
+    line-height:1.9;
+    color:rgba(255,255,255,.72);
     word-break:keep-all;
   }
 
   .sub{
     margin-top:18px;
-    font-size:12px;
-    line-height:1.95;
-    color:rgba(255,255,255,.40);
+    font-size:16px;
+    line-height:1.9;
+    color:rgba(255,255,255,.68);
     word-break:keep-all;
   }
 
@@ -350,10 +354,10 @@
     margin-top:24px;
     padding-top:14px;
     border-top:1px solid rgba(255,255,255,.10);
-    font-size:10px;
-    line-height:1.85;
-    letter-spacing:.04em;
-    color:rgba(255,255,255,.28);
+    font-size:16px;
+    line-height:1.8;
+    letter-spacing:.015em;
+    color:rgba(255,255,255,.64);
   }
 
   .track-tag{
@@ -446,7 +450,8 @@
     .dot{left:8px}
     .index{display:none}
     .hero-copy{width:88vw}
-    .body{font-size:14px}
+    .body{font-size:16px}
+    .sub,.memory-note{font-size:16px}
   }
 </style>
 </head>
@@ -730,6 +735,7 @@
 (() => {
   const root=document.documentElement;
   const tattooItems=[...document.querySelectorAll("[data-threshold]")];
+  const chapterContents=[...document.querySelectorAll(".chapter .content")];
   let raf=0;
 
   function render(){
@@ -742,6 +748,30 @@
     tattooItems.forEach(el=>{
       const threshold=parseFloat(el.dataset.threshold || "0");
       el.classList.toggle("show",p>=threshold);
+    });
+
+    /*
+      Reading hierarchy stays visually flat.
+      Chapters remain fully visible while entering and being read,
+      then only dim as they leave through the top of the viewport.
+    */
+    chapterContents.forEach(el=>{
+      const rect=el.getBoundingClientRect();
+      const h=Math.max(innerHeight,1);
+
+      // No fade-in from below. Start dimming only after the block rises past 34vh.
+      const start=h*.34;
+      const end=-h*.08;
+
+      let fade=1;
+      if(rect.top < start){
+        fade=(rect.top-end)/(start-end);
+        fade=Math.max(0,Math.min(1,fade));
+      }
+
+      const eased=fade*fade*(3-2*fade);
+      el.style.opacity=(.10 + eased*.90).toFixed(3);
+      el.style.filter=`blur(${((1-eased)*1.2).toFixed(2)}px)`;
     });
   }
 
