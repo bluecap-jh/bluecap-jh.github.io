@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>INTERSTELLAR → TENET → DUNKIRK — Time Study</title>
+<title>INTERSTELLAR → TENET → DUNKIRK → MEMENTO — Time Study</title>
 <style>
   *{box-sizing:border-box}
   html,body{
@@ -23,7 +23,7 @@
   /* One parent-owned finite timeline */
   #scrollSpace{
     width:100%;
-    height:4450vh;
+    height:6850vh;
     background:#000;
   }
 
@@ -54,6 +54,13 @@
 
   #dunkirkLayer{
     z-index:4;
+    opacity:0;
+    filter:brightness(.72) blur(5px);
+    transform:scale(1.012);
+  }
+
+  #mementoLayer{
+    z-index:5;
     opacity:0;
     filter:brightness(.72) blur(5px);
     transform:scale(1.012);
@@ -127,6 +134,16 @@
     loading="eager"></iframe>
 </div>
 
+<div class="project-layer" id="mementoLayer">
+  <iframe
+    class="project-frame"
+    id="mementoFrame"
+    src="/memento-v1/"
+    title="MEMENTO — Memory Order Study"
+    tabindex="-1"
+    loading="eager"></iframe>
+</div>
+
 <div id="cinemaVeil" aria-hidden="true"></div>
 <div id="scrollCatcher" aria-hidden="true"></div>
 
@@ -148,8 +165,13 @@
       3205–3390   DUNKIRK emerges from black
       3390–4350   DUNKIRK
 
-    The TENET → DUNKIRK bridge deliberately uses the same
-    90 / 170 / 140 / 185vh rhythm as INTERSTELLAR → TENET.
+      4350–4440   hold final DUNKIRK frame
+      4440–4610   fade DUNKIRK into black
+      4610–4750   full black hold
+      4750–4935   MEMENTO emerges from black
+      4935–6750   MEMENTO
+
+    Every bridge uses the same 90 / 170 / 140 / 185vh cinematic rhythm.
   */
   const T = {
     interEnd:1080,
@@ -162,12 +184,18 @@
     tenetFadeOutEnd:3065,
     tenetBlackHoldEnd:3205,
     dunkirkFadeInEnd:3390,
-    dunkirkEnd:4350
+    dunkirkEnd:4350,
+    dunkirkHoldEnd:4440,
+    dunkirkFadeOutEnd:4610,
+    dunkirkBlackHoldEnd:4750,
+    mementoFadeInEnd:4935,
+    mementoEnd:6750
   };
 
   const interLayer = document.getElementById('interstellarLayer');
   const tenetLayer = document.getElementById('tenetLayer');
   const dunkirkLayer = document.getElementById('dunkirkLayer');
+  const mementoLayer = document.getElementById('mementoLayer');
   const veil = document.getElementById('cinemaVeil');
 
   const states = {
@@ -187,6 +215,13 @@
     },
     dunkirk:{
       frame:document.getElementById('dunkirkFrame'),
+      endSelector:null,
+      max:1,
+      endY:0,
+      ready:false
+    },
+    memento:{
+      frame:document.getElementById('mementoFrame'),
       endSelector:null,
       max:1,
       endY:0,
@@ -299,10 +334,12 @@
     let interP=0;
     let tenetP=0;
     let dunkirkP=0;
+    let mementoP=0;
 
     let interOpacity=0;
     let tenetOpacity=0;
     let dunkirkOpacity=0;
+    let mementoOpacity=0;
     let veilOpacity=0;
 
     let interBrightness=1;
@@ -316,6 +353,10 @@
     let dunkirkBlur=5;
     let dunkirkScale=1.012;
 
+    let mementoBrightness=.72;
+    let mementoBlur=5;
+    let mementoScale=1.012;
+
     /* ---------- INTERSTELLAR ---------- */
     if(yVh < T.interEnd){
       interP=clamp(yVh/T.interEnd,0,1);
@@ -326,9 +367,7 @@
       interOpacity=1;
 
     }else if(yVh < T.interFadeOutEnd){
-      const p=smoother(
-        (yVh-T.interHoldEnd)/(T.interFadeOutEnd-T.interHoldEnd)
-      );
+      const p=smoother((yVh-T.interHoldEnd)/(T.interFadeOutEnd-T.interHoldEnd));
       interP=1;
       interOpacity=1-p*.96;
       veilOpacity=p;
@@ -337,16 +376,11 @@
 
     }else if(yVh < T.interBlackHoldEnd){
       interP=1;
-      interOpacity=0;
       veilOpacity=1;
 
     }else if(yVh < T.tenetFadeInEnd){
-      const p=smoother(
-        (yVh-T.interBlackHoldEnd)/(T.tenetFadeInEnd-T.interBlackHoldEnd)
-      );
+      const p=smoother((yVh-T.interBlackHoldEnd)/(T.tenetFadeInEnd-T.interBlackHoldEnd));
       interP=1;
-      tenetP=0;
-
       tenetOpacity=p;
       veilOpacity=1-p;
       tenetBrightness=.72+p*.28;
@@ -356,10 +390,7 @@
     /* ---------- TENET ---------- */
     }else if(yVh < T.tenetEnd){
       interP=1;
-      tenetP=clamp(
-        (yVh-T.tenetFadeInEnd)/(T.tenetEnd-T.tenetFadeInEnd),
-        0,1
-      );
+      tenetP=clamp((yVh-T.tenetFadeInEnd)/(T.tenetEnd-T.tenetFadeInEnd),0,1);
       tenetOpacity=1;
       tenetBrightness=1;
       tenetBlur=0;
@@ -374,12 +405,9 @@
       tenetScale=1;
 
     }else if(yVh < T.tenetFadeOutEnd){
-      const p=smoother(
-        (yVh-T.tenetHoldEnd)/(T.tenetFadeOutEnd-T.tenetHoldEnd)
-      );
+      const p=smoother((yVh-T.tenetHoldEnd)/(T.tenetFadeOutEnd-T.tenetHoldEnd));
       interP=1;
       tenetP=1;
-
       tenetOpacity=1-p*.96;
       veilOpacity=p;
       tenetBrightness=1-p*.58;
@@ -389,20 +417,12 @@
     }else if(yVh < T.tenetBlackHoldEnd){
       interP=1;
       tenetP=1;
-      dunkirkP=0;
-
-      tenetOpacity=0;
-      dunkirkOpacity=0;
       veilOpacity=1;
 
     }else if(yVh < T.dunkirkFadeInEnd){
-      const p=smoother(
-        (yVh-T.tenetBlackHoldEnd)/(T.dunkirkFadeInEnd-T.tenetBlackHoldEnd)
-      );
+      const p=smoother((yVh-T.tenetBlackHoldEnd)/(T.dunkirkFadeInEnd-T.tenetBlackHoldEnd));
       interP=1;
       tenetP=1;
-      dunkirkP=0;
-
       dunkirkOpacity=p;
       veilOpacity=1-p;
       dunkirkBrightness=.72+p*.28;
@@ -410,19 +430,63 @@
       dunkirkScale=1.012-p*.012;
 
     /* ---------- DUNKIRK ---------- */
-    }else{
+    }else if(yVh < T.dunkirkEnd){
       interP=1;
       tenetP=1;
-      dunkirkP=clamp(
-        (yVh-T.dunkirkFadeInEnd)/(T.dunkirkEnd-T.dunkirkFadeInEnd),
-        0,1
-      );
-
+      dunkirkP=clamp((yVh-T.dunkirkFadeInEnd)/(T.dunkirkEnd-T.dunkirkFadeInEnd),0,1);
       dunkirkOpacity=1;
-      veilOpacity=0;
       dunkirkBrightness=1;
       dunkirkBlur=0;
       dunkirkScale=1;
+
+    }else if(yVh < T.dunkirkHoldEnd){
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      dunkirkOpacity=1;
+      dunkirkBrightness=1;
+      dunkirkBlur=0;
+      dunkirkScale=1;
+
+    }else if(yVh < T.dunkirkFadeOutEnd){
+      const p=smoother((yVh-T.dunkirkHoldEnd)/(T.dunkirkFadeOutEnd-T.dunkirkHoldEnd));
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      dunkirkOpacity=1-p*.96;
+      veilOpacity=p;
+      dunkirkBrightness=1-p*.58;
+      dunkirkBlur=p*5;
+      dunkirkScale=1;
+
+    }else if(yVh < T.dunkirkBlackHoldEnd){
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      veilOpacity=1;
+
+    }else if(yVh < T.mementoFadeInEnd){
+      const p=smoother((yVh-T.dunkirkBlackHoldEnd)/(T.mementoFadeInEnd-T.dunkirkBlackHoldEnd));
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      mementoOpacity=p;
+      veilOpacity=1-p;
+      mementoBrightness=.72+p*.28;
+      mementoBlur=(1-p)*5;
+      mementoScale=1.012-p*.012;
+
+    /* ---------- MEMENTO ---------- */
+    }else{
+      interP=1;
+      tenetP=1;
+      dunkirkP=1;
+      mementoP=clamp((yVh-T.mementoFadeInEnd)/(T.mementoEnd-T.mementoFadeInEnd),0,1);
+      mementoOpacity=1;
+      veilOpacity=0;
+      mementoBrightness=1;
+      mementoBlur=0;
+      mementoScale=1;
     }
 
     interLayer.style.opacity=interOpacity.toFixed(4);
@@ -439,11 +503,17 @@
       'brightness('+dunkirkBrightness.toFixed(4)+') blur('+dunkirkBlur.toFixed(2)+'px)';
     dunkirkLayer.style.transform='scale('+dunkirkScale.toFixed(5)+')';
 
+    mementoLayer.style.opacity=mementoOpacity.toFixed(4);
+    mementoLayer.style.filter=
+      'brightness('+mementoBrightness.toFixed(4)+') blur('+mementoBlur.toFixed(2)+'px)';
+    mementoLayer.style.transform='scale('+mementoScale.toFixed(5)+')';
+
     veil.style.opacity=veilOpacity.toFixed(4);
 
     scrollProject(states.inter,interP);
     scrollProject(states.tenet,tenetP);
     scrollProject(states.dunkirk,dunkirkP);
+    scrollProject(states.memento,mementoP);
   }
 
   function requestRender(){
@@ -489,6 +559,7 @@
     settle(states.inter);
     settle(states.tenet);
     settle(states.dunkirk);
+    settle(states.memento);
   });
 
   addEventListener('pageshow',requestRender);
