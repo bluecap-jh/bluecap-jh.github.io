@@ -273,14 +273,16 @@
   }
 
   .marker{
-    position:relative;
-    width:min(760px,76vw);
-    margin:0 auto 30px;
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+    width:82px;
     display:flex;
     align-items:center;
-    justify-content:center;
+    justify-content:flex-start;
     gap:10px;
-    text-align:center;
+    text-align:left;
   }
 
   .dot{
@@ -290,6 +292,7 @@
     border-radius:50%;
     border:1px solid rgba(255,255,255,.60);
     background:#000;
+    flex:0 0 auto;
   }
 
   .index{
@@ -450,8 +453,14 @@
       padding:22vh 0 24vh;
     }
     .marker{
-      width:min(82vw,680px);
-      margin:0 auto 24px;
+      left:0;
+      top:50%;
+      width:46px;
+      transform:translateY(-50%);
+      gap:6px;
+    }
+    .marker .index{
+      font-size:8px;
     }
     .content{
       width:min(82vw,680px);
