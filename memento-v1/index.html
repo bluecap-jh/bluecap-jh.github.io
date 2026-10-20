@@ -127,73 +127,98 @@
     transform:rotate(4deg) translateY(calc(var(--film-shift) * -1.05));
   }
 
-  /* ---------- TATTOO / MEMORY LAYER ---------- */
+  /* ---------- MEMORY PHRASES / FILM-SCRATCH LAYER ---------- */
   .tattoo-layer{
     position:fixed;
+    inset:0;
     z-index:2;
-    right:6.2vw;
-    top:12vh;
-    width:min(360px,31vw);
-    height:76vh;
     pointer-events:none;
-    color:rgba(255,255,255,.30);
     mix-blend-mode:screen;
+    overflow:hidden;
   }
 
   .tattoo{
     position:absolute;
+    width:max-content;
+    max-width:24vw;
     opacity:0;
-    transition:opacity .75s ease, transform .75s ease;
     font-family:Georgia,"Times New Roman",serif;
     font-style:italic;
-    letter-spacing:.03em;
-    color:rgba(255,255,255,.38);
+    font-weight:500;
+    letter-spacing:.045em;
+    line-height:1.05;
+    color:rgba(255,255,255,.70);
     text-shadow:
-      0 0 10px rgba(255,255,255,.045),
-      0 0 24px rgba(255,255,255,.025);
+      0 0 8px rgba(255,255,255,.05),
+      0 0 20px rgba(255,255,255,.025);
+    transform:translateY(8px);
+    transition:opacity .65s ease, transform .75s ease;
+    -webkit-mask-image:
+      repeating-linear-gradient(
+        to bottom,
+        #000 0 7px,
+        rgba(0,0,0,.82) 7px 8px,
+        #000 8px 15px
+      );
+    mask-image:
+      repeating-linear-gradient(
+        to bottom,
+        #000 0 7px,
+        rgba(0,0,0,.82) 7px 8px,
+        #000 8px 15px
+      );
   }
-  .tattoo.show{opacity:1}
 
-  .tattoo.t1{
-    top:3%;
-    right:4%;
-    font-size:17px;
-    transform:rotate(-5deg) translateY(8px);
+  .tattoo::before,
+  .tattoo::after{
+    content:"";
+    position:absolute;
+    height:1px;
+    background:rgba(255,255,255,.28);
+    pointer-events:none;
+    opacity:.48;
   }
-  .tattoo.t1.show{transform:rotate(-5deg) translateY(0)}
 
-  .tattoo.t2{
-    top:22%;
-    left:3%;
-    font-size:14px;
-    transform:rotate(6deg) translateY(8px);
+  .tattoo::before{
+    width:44%;
+    top:34%;
+    left:-11%;
+    transform:rotate(-3deg);
   }
-  .tattoo.t2.show{transform:rotate(6deg) translateY(0)}
 
-  .tattoo.t3{
-    top:40%;
-    right:0;
-    font-size:21px;
-    letter-spacing:.09em;
-    transform:rotate(-7deg) translateY(8px);
+  .tattoo::after{
+    width:28%;
+    top:67%;
+    right:-9%;
+    transform:rotate(2deg);
   }
-  .tattoo.t3.show{transform:rotate(-7deg) translateY(0)}
 
-  .tattoo.t4{
-    top:59%;
-    left:8%;
-    font-size:14px;
-    transform:rotate(4deg) translateY(8px);
-  }
-  .tattoo.t4.show{transform:rotate(4deg) translateY(0)}
+  .tattoo.show{opacity:.70}
 
-  .tattoo.t5{
-    bottom:7%;
-    right:3%;
-    font-size:18px;
-    transform:rotate(-3deg) translateY(8px);
-  }
-  .tattoo.t5.show{transform:rotate(-3deg) translateY(0)}
+  .tattoo.left{left:4vw;text-align:left}
+  .tattoo.right{right:4vw;text-align:right}
+
+  .tattoo.t1{top:9%;font-size:24px;transform:rotate(-6deg) translateY(8px)}
+  .tattoo.t2{top:18%;font-size:18px;transform:rotate(4deg) translateY(8px)}
+  .tattoo.t3{top:27%;font-size:27px;transform:rotate(-4deg) translateY(8px)}
+  .tattoo.t4{top:37%;font-size:20px;transform:rotate(5deg) translateY(8px)}
+  .tattoo.t5{top:47%;font-size:25px;transform:rotate(-7deg) translateY(8px)}
+  .tattoo.t6{top:57%;font-size:19px;transform:rotate(3deg) translateY(8px)}
+  .tattoo.t7{top:67%;font-size:28px;transform:rotate(-5deg) translateY(8px)}
+  .tattoo.t8{top:76%;font-size:20px;transform:rotate(6deg) translateY(8px)}
+  .tattoo.t9{top:84%;font-size:24px;transform:rotate(-3deg) translateY(8px)}
+  .tattoo.t10{top:91%;font-size:18px;transform:rotate(4deg) translateY(8px)}
+
+  .tattoo.t1.show{transform:rotate(-6deg) translateY(0)}
+  .tattoo.t2.show{transform:rotate(4deg) translateY(0)}
+  .tattoo.t3.show{transform:rotate(-4deg) translateY(0)}
+  .tattoo.t4.show{transform:rotate(5deg) translateY(0)}
+  .tattoo.t5.show{transform:rotate(-7deg) translateY(0)}
+  .tattoo.t6.show{transform:rotate(3deg) translateY(0)}
+  .tattoo.t7.show{transform:rotate(-5deg) translateY(0)}
+  .tattoo.t8.show{transform:rotate(6deg) translateY(0)}
+  .tattoo.t9.show{transform:rotate(-3deg) translateY(0)}
+  .tattoo.t10.show{transform:rotate(4deg) translateY(0)}
 
   /* ---------- MAIN ---------- */
   .page{
@@ -209,6 +234,8 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
+    align-items:center;
+    text-align:center;
     padding:16vh 0 16vh;
     border-bottom:1px solid var(--line);
   }
@@ -242,6 +269,7 @@
     margin-top:34px;
     display:flex;
     align-items:center;
+    justify-content:center;
     gap:18px;
     font-size:9px;
     letter-spacing:.16em;
@@ -311,9 +339,11 @@
 
   .content{
     width:min(730px,100%);
+    margin:0 auto;
+    text-align:center;
     opacity:1;
     transform:translateY(0);
-    transition:opacity .08s linear, filter .08s linear;
+    transition:opacity .06s linear, filter .06s linear;
     will-change:opacity,filter;
   }
 
@@ -363,6 +393,7 @@
   .track-tag{
     display:inline-flex;
     align-items:center;
+    justify-content:center;
     gap:9px;
     margin-top:24px;
     font-size:8px;
@@ -430,7 +461,9 @@
   }
 
   @media(max-width:980px){
-    .tattoo-layer{opacity:.55;right:4vw;width:25vw}
+    .tattoo{max-width:20vw;font-size:16px!important}
+    .tattoo.left{left:2vw}
+    .tattoo.right{right:2vw}
     .film-strip{opacity:.16}
     .film-strip.center{display:none}
   }
@@ -464,11 +497,16 @@
 </div>
 
 <div class="tattoo-layer" aria-hidden="true">
-  <span class="tattoo t1" data-threshold=".16">Remember Sammy Jankis</span>
-  <span class="tattoo t2" data-threshold=".32">FACT 01</span>
-  <span class="tattoo t3" data-threshold=".50">DON'T TRUST</span>
-  <span class="tattoo t4" data-threshold=".68">A MEMORY CAN CHANGE</span>
-  <span class="tattoo t5" data-threshold=".84">WHO WROTE THE FACT?</span>
+  <span class="tattoo left t1" data-threshold=".08">Remember Sammy Jankis</span>
+  <span class="tattoo right t2" data-threshold=".14">FACT 01</span>
+  <span class="tattoo left t3" data-threshold=".22">DON'T TRUST</span>
+  <span class="tattoo right t4" data-threshold=".30">A MEMORY CAN CHANGE</span>
+  <span class="tattoo left t5" data-threshold=".38">WHO WROTE THE FACT?</span>
+  <span class="tattoo right t6" data-threshold=".46">REMEMBER THE PHOTO</span>
+  <span class="tattoo left t7" data-threshold=".54">MEMORY IS UNRELIABLE</span>
+  <span class="tattoo right t8" data-threshold=".63">WRITE IT DOWN</span>
+  <span class="tattoo left t9" data-threshold=".72">YOU CHOOSE THE TRUTH</span>
+  <span class="tattoo right t10" data-threshold=".82">WHAT DID YOU FORGET?</span>
 </div>
 
 <div class="progress" aria-hidden="true"></div>
@@ -751,27 +789,31 @@
     });
 
     /*
-      Reading hierarchy stays visually flat.
-      Chapters remain fully visible while entering and being read,
-      then only dim as they leave through the top of the viewport.
+      Every chapter follows the same brightness rhythm:
+      dark at the bottom -> full brightness near screen center -> dark at the top.
+      This replaces typographic color hierarchy with scroll-based focus.
     */
     chapterContents.forEach(el=>{
       const rect=el.getBoundingClientRect();
       const h=Math.max(innerHeight,1);
+      const centerY=rect.top + Math.min(rect.height,h*.72)/2;
+      const viewportCenter=h*.50;
 
-      // No fade-in from below. Start dimming only after the block rises past 34vh.
-      const start=h*.34;
-      const end=-h*.08;
+      // 0 near the top/bottom edges, 1 around the visual center.
+      const distance=Math.abs(centerY-viewportCenter);
+      const range=h*.58;
+      let focus=1-(distance/range);
+      focus=Math.max(0,Math.min(1,focus));
 
-      let fade=1;
-      if(rect.top < start){
-        fade=(rect.top-end)/(start-end);
-        fade=Math.max(0,Math.min(1,fade));
-      }
+      // Hold the central region bright a little longer.
+      focus=Math.pow(focus,.72);
+      const eased=focus*focus*(3-2*focus);
 
-      const eased=fade*fade*(3-2*fade);
-      el.style.opacity=(.10 + eased*.90).toFixed(3);
-      el.style.filter=`blur(${((1-eased)*1.2).toFixed(2)}px)`;
+      const opacity=.22 + eased*.78;
+      const blur=(1-eased)*1.05;
+
+      el.style.opacity=opacity.toFixed(3);
+      el.style.filter=`blur(${blur.toFixed(2)}px)`;
     });
   }
 
